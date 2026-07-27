@@ -1,0 +1,5 @@
+{
+    "json.schemaDownload.trustedDomains": {
+        "https://skills.sh/schemas/": true
+    }
+}
