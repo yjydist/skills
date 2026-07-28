@@ -1,5 +1,5 @@
 ---
-name: agent-writing-paper-note
+name: writing-paper-notes
 description: Analyze an academic paper end to end and write a structured set of beginner-friendly Markdown reading notes that preserve the depth and learning value of a close reading. Use when the user asks to read, analyze, explain, study, or take notes on a paper, preprint, journal article, conference paper, or technical manuscript, especially when the output should be split by the paper's sections under a notes/ directory. Accepts a local file, an arXiv ID or URL, a DOI, or a paper title; fetches the most parseable open-access source available.
 ---
 
