@@ -1,154 +1,205 @@
 ---
 name: writing-paper-notes
-description: Analyze an academic paper end to end and write a structured set of beginner-friendly Markdown reading notes that preserve the depth and learning value of a close reading. Use when the user asks to read, analyze, explain, study, or take notes on a paper, preprint, journal article, conference paper, or technical manuscript, especially when the output should be split by the paper's sections under a notes/ directory. Accepts a local file, an arXiv ID or URL, a DOI, or a paper title; fetches the most parseable open-access source available.
+description: Read an academic paper end to end and turn it into rigorous, beginner-friendly Markdown study notes plus a paper-specific active-recall worksheet. Use this skill whenever a user asks to understand, study, explain, closely read, or take notes on a paper, preprint, journal article, conference paper, or technical manuscript, including requests given as a local file, URL, arXiv ID, DOI, or title. Produce section-by-section notes under notes/ and an unfilled SUMMARY.CARD.md in the output root so the reader can test and repair their own understanding.
 ---
 
 # Write Paper Notes
 
-Produce a self-contained guided reading that lets a reader with no prior knowledge reach the understanding they would gain from closely reading the paper. Optimize for understanding and fidelity, not brevity.
+Create a guided close reading that teaches the paper faithfully and gives the reader a demanding way to test whether they can reconstruct it without looking. Optimize for an accurate mental model, not for shortness or mechanical coverage.
 
-## Establish the source and output location
+## Define the task and output root
 
-1. Resolve what the user gave you: a local file or directory, an arXiv ID or URL, a DOI, an ACL Anthology / PMLR / NeurIPS / OpenReview URL, a general paper URL, or a bare title. Normalize to a canonical identifier and venue. Cache every download into a local working directory (e.g. `.paper-source/` beside the eventual `notes/`), never into the output directory.
+1. Resolve the paper and any user constraints: requested language, audience background, output directory, pinned paper version, and whether existing files may be replaced. If the user does not specify a language, use the language of their request. If no output directory is specified, use the current working directory.
 
-2. Acquire the most parseable source available, trying each in turn and stopping at the first complete paper (one containing the main body sections, not just the abstract or figures):
-   - **(1) LaTeX source - preferred.** Exact math, structure, figures, and tables with no extraction loss.
-   - **(2) HTML - second choice.** Structured and easy to parse; loses little.
-   - **(3) PDF - last resort.** Hard to parse; layout, math, and tables are easily lost.
+2. Treat the chosen directory as `<output-root>` and produce this public contract:
 
-   The venue-specific URLs, format-availability matrix, and exact curl/tar/pandoc commands are in `references/paper-sources.md` - load it now. Note that ACL, PMLR, and NeurIPS offer no LaTeX source and no full-text HTML, so for them the cascade collapses to PDF immediately. If a higher-priority format is unavailable, drop to the next format rather than asking the user.
+   ```text
+   <output-root>/
+   |-- SUMMARY.CARD.md
+   `-- notes/
+       |-- 00.abstract.md
+       |-- 01.<section-name>.md
+       |-- 02.<section-name>.md
+       `-- ...
+   ```
 
-3. For a DOI behind a paywall, query Unpaywall (https://api.unpaywall.org/v2/<doi>?email=<real-email>) for an open-access URL before giving up; if it finds nothing, search arXiv by the paper title for a preprint. If only a bare title was given, search the web first to find an arXiv or open-access copy, then proceed.
+3. Keep downloaded and extracted source material in a hidden working directory such as `<output-root>/.paper-source/`, never under `notes/`.
+   Put every persisted non-deliverable artifact there as well: extracted text, page renders, source inventories, the section map, the paper model, ledgers, scratch calculations, and temporary scripts. The only public artifacts this skill creates are `SUMMARY.CARD.md` and the Markdown files directly under `notes/`.
 
-4. Read the entire paper before drafting notes. Include footnotes, figure and table captions, appendices, and supplementary material when they affect the argument or evidence. For ACL/NeurIPS this means any separate Supplement download; for arXiv it means ancillary files and the .bib/.bbl reference list.
+4. Protect existing work:
+   - Inventory the target paths before writing anything so conflict handling does not depend on noticing a collision late in the run.
+   - Treat an existing `SUMMARY.CARD.md` as human-authored, even if it looks blank. Do not modify or replace it unless the user explicitly asks you to do so.
+   - Preserve existing note files unless the user explicitly asks to replace them. Update a file only when it clearly belongs to the same paper and the requested task requires the update.
+   - Stop and report a conflict when a target file belongs to another paper. Do not work around a conflict by silently choosing a different filename.
 
-5. Create `notes/` in the user-specified output directory. If none is specified, create it in the current working directory - never inside the download cache.
+## Acquire a complete, readable source
 
-6. Preserve existing note files unless the user explicitly asks to replace them. When a target filename already exists, update it only if it clearly belongs to the same paper; otherwise stop and report the conflict.
+Resolve local files, arXiv IDs or URLs, DOIs, venue pages, general paper URLs, and bare titles. Load `references/paper-sources.md` before acquiring a remote paper; it contains the source cascade, venue-specific behavior, and extraction commands.
 
-Do not begin drafting from the abstract alone. If all three formats fail after the open-access resolution steps above, state the limitation and request the missing source rather than presenting abstract-only notes as a close reading.
+Prefer the most structurally faithful complete source:
 
-## Map the paper before writing
+1. LaTeX source, including every included file, bibliography, and available figure.
+2. Full-text HTML with preserved math, tables, figures, and captions.
+3. PDF inspected through both searchable text extraction and page rendering.
 
-Build a private coverage map with:
+Do not mistake an abstract page, metadata page, figure listing, or truncated preview for the paper. Read the complete main text before drafting. Include footnotes, appendices, supplementary material, captions, and reference context when they affect the method, evidence, or interpretation.
 
-- the paper's central question, thesis, contributions, and claimed novelty;
-- the logical dependency chain from motivation through method to evidence and conclusion;
-- every top-level section and its subsections in source order;
-- all important definitions, assumptions, equations, algorithms, figures, tables, datasets, metrics, baselines, ablations, and limitations;
-- the location of each important claim, using page and section plus equation, figure, or table identifiers when available.
+If no complete source is available after reasonable open-access resolution, explain what is missing and request the source. Do not present abstract-only notes as a close reading.
 
-Distinguish what the authors demonstrate from what they assume, speculate, inherit from prior work, or leave unresolved. Use this map as a completeness checklist after drafting.
+## Build a paper model before writing
+
+Create a private paper model that captures how the work hangs together, not merely where topics appear. If it is persisted, save it under `.paper-source/`, never under `notes/`. Record:
+
+- the motivating problem, research question, thesis, and claimed contributions;
+- the dependency chain from assumptions and prior results through method and evidence to conclusion;
+- every substantive section and subsection in source order;
+- the main entities, definitions, variables, assumptions, equations, algorithms, datasets, metrics, baselines, figures, tables, ablations, and limitations;
+- a claim-evidence ledger linking each important claim to its actual support and source locator;
+- unresolved ambiguities, missing details, threats to validity, and results that are negative or weaker than the headline;
+- what a reader must be able to explain, derive, predict, or critique to demonstrate understanding.
+
+For every important statement, distinguish among:
+
+- what the paper observes or proves;
+- what the authors infer from that evidence;
+- what they assume or inherit from prior work;
+- what you infer while teaching the paper;
+- what remains unknown.
+
+Use this model as the shared source for the notes, the recall card, and final verification.
+
+## Match the analysis to the paper
+
+Do not force every paper through an identical checklist. Give the greatest depth to the reasoning that determines whether the conclusion is warranted.
+
+- **Theoretical or mathematical work:** reconstruct definitions, assumptions, theorem dependencies, proof ideas, edge cases, and the gap between formal claims and informal interpretation.
+- **Empirical or scientific work:** reconstruct hypotheses, study design, sampling, controls, measurement, statistical analysis, uncertainty, alternative explanations, and external validity.
+- **Algorithm or machine-learning work:** trace objectives, data flow, optimization, training and inference, computational cost, baselines, ablations, and reproducibility details.
+- **Systems work:** explain architecture, interfaces, invariants, workloads, bottlenecks, resource tradeoffs, failure modes, and whether evaluations represent deployment conditions.
+- **Survey, position, or conceptual work:** reconstruct taxonomy, selection criteria, argumentative structure, competing views, evidence standards, and omissions.
+
+Many papers mix types. Apply all relevant lenses without adding empty boilerplate.
 
 ## Create the note files
 
-Always create:
+Name the overview exactly `notes/00.abstract.md`. Then create one file per substantive top-level section in paper order, starting at `01` and zero-padding to at least two digits.
 
-```text
-notes/
-|-- 00.abstract.md
-|-- 01.<section-name>.md
-|-- 02.<section-name>.md
-`-- ...
+- Derive filenames from printed section titles. Use lowercase kebab-case for English titles. For other languages, retain readable native words while replacing whitespace and unsafe punctuation with hyphens.
+- Keep subsections inside their parent file.
+- Include substantive unnumbered sections.
+- Give appendices or supplements their own consecutively numbered files when they add methods, proofs, experiments, or information needed to interpret or reproduce the paper.
+- Skip standalone files for acknowledgments, author contributions, and references unless they contain substantive technical content.
+- If the paper has no useful section structure, infer a small logical structure and label it as an instructional reorganization.
+
+### Write `00.abstract.md` last
+
+Make the overview a navigable model of the whole paper rather than a translation of its published abstract. Include:
+
+1. the paper in one plain-language sentence: problem, approach, and result;
+2. why the problem matters and what made it difficult;
+3. the research question, scope, assumptions, and core mechanism;
+4. a compact claim-evidence table with the strongest exact results and source locators;
+5. what is genuinely new versus reused or extended;
+6. what the evidence does not establish and where the method can fail;
+7. a prerequisite glossary that defines only concepts needed to enter the section notes;
+8. a reading map linking every generated section file and explaining why it matters;
+9. a relative link to `../SUMMARY.CARD.md`, described as the closed-book understanding check.
+
+### Write each section as a guided reconstruction
+
+Use the original section title as the top-level heading and include its printed number when available. Organize around the section's actual reasoning. Cover applicable elements below, but do not manufacture empty headings.
+
+- **Role in the argument:** what this section receives from earlier sections, what it must establish, and what later sections depend on it.
+- **Background from zero:** prerequisites, precise definitions, and contrasts between easily confused concepts before they are used.
+- **Reasoning or mechanism:** reconstruct each important transition from premise or input to conclusion or output. Surface hidden intermediate steps.
+- **Operational intuition:** add a toy example, counterexample, analogy, or small calculation for each genuinely difficult idea. Mark anything invented for teaching.
+- **Formal content:** preserve definitions, assumptions, objectives, constraints, algorithms, proofs, and implementation details that affect correctness or reproducibility.
+- **Evidence and calibration:** explain what each important result tests, what was observed, what it supports, and what it cannot support.
+- **Section synthesis:** end with the few ideas worth retaining and at least two active-recall questions. Put answers inside collapsed `<details>` blocks so the reader must choose to reveal them.
+
+Use relative links when connecting files. Define a term before relying on it and keep notation and translations consistent across all notes.
+
+Use one fold per question so revealing one answer does not reveal the others. Translate the visible labels, but retain the machine-readable comment:
+
+```markdown
+<!-- self-check: 1 -->
+**Question 1: [section-specific reconstruction question]**
+
+<details>
+<summary>Reveal answer</summary>
+
+[A concise answer justified by this section]
+
+</details>
 ```
 
-Apply these naming rules:
+Repeat with consecutive numbers local to the section. Do not put multiple questions in one `<details>` block. Each section note must link back to `00.abstract.md` so navigation works in both directions.
 
-- Name the overview exactly `00.abstract.md`.
-- Create one subsequent file for every substantive top-level section, in paper order, starting at `01` and zero-padding to at least two digits.
-- Derive `<section-name>` from the section's printed title. For English titles, use lowercase kebab-case; for titles in other languages, retain readable native words and replace whitespace or filesystem-unsafe punctuation with hyphens.
-- Keep subsections inside their parent section file rather than creating separate files.
-- Treat an unnumbered introduction, conclusion, or other substantive heading as a section.
-- Create separate, consecutively numbered files for appendices or supplementary sections when they add methods, proofs, experiments, or details needed to understand or reproduce the work.
-- Do not create standalone files for acknowledgments, author contributions, or the references list unless they contain substantive technical content. Explain important cited work where it becomes relevant instead.
+## Explain technical material precisely
 
-If the source has no useful section structure, infer a small set of logical sections from the argument and make clear in each file that the division was inferred.
+### Equations, definitions, and proofs
 
-## Write `00.abstract.md`
+For each equation central to the paper's logic:
 
-Write this file after understanding the whole paper. It is a guided map of the work, not merely a translation of the published abstract. Include:
+1. state the question the equation answers;
+2. reproduce it accurately, or cite its number if extraction is unreliable;
+3. define every symbol, including type, shape, index range, and units when relevant;
+4. explain the role and intuition of each term or operation;
+5. work a small numerical or conceptual example when practical;
+6. state assumptions, boundary conditions, and qualitative behavior at important limits;
+7. show how the paper derives or uses it.
 
-1. **The paper in one sentence**: the problem, approach, and result in plain language.
-2. **Why this problem matters**: the real-world or scientific stakes and what was difficult before this work.
-3. **What the paper does**: the research question, core idea, method, and scope.
-4. **What it finds**: the strongest evidence and exact headline results, with source locators.
-5. **What is genuinely new**: separate claimed contributions from incremental reuse of prior work.
-6. **What the result does not establish**: key assumptions, limitations, and boundaries.
-7. **Prerequisite concepts**: a short glossary of the minimum concepts a newcomer needs before reading the section notes.
-8. **Reading map**: one or two sentences on the purpose of each generated section file, using relative Markdown links.
-
-## Write each section note
-
-Use the paper's original section title as the top-level heading and state the original section number when one exists. Organize the explanation around the material rather than forcing empty boilerplate, but cover every applicable item below:
-
-- **Purpose and takeaway**: explain why this section exists in the paper's argument and what the reader should know after it.
-- **Background from zero**: introduce every prerequisite before relying on it. Define technical terms on first use and contrast easily confused concepts.
-- **Step-by-step reasoning**: reconstruct how the authors move from premises to conclusion. Make hidden intermediate steps explicit.
-- **Concrete example**: give a small example, analogy, counterexample, or toy calculation that makes each difficult idea operational. Label examples invented for teaching as such.
-- **Formal details**: preserve definitions, assumptions, objectives, constraints, algorithms, proofs, and implementation details that affect correctness or reproducibility.
-- **Evidence**: explain experiments, qualitative analysis, theoretical support, and negative or null results, including what each piece of evidence can and cannot support.
-- **Connection to the paper**: show what this section consumes from earlier sections and what later sections depend on it. Link to the relevant note files.
-- **Section recap**: finish with the few conclusions the reader should retain and two or more short self-check questions with answers.
-
-Keep the prose in the user's requested language; otherwise use the language of the user's request. Quote original terminology when translation could create ambiguity.
-
-## Explain technical material
-
-### Equations and symbols
-
-For every equation central to the argument:
-
-1. State what question the equation answers in ordinary language.
-2. Reproduce it accurately or cite its equation number if reproduction is unreliable.
-3. Define every symbol at first use, including type, shape, index range, and units when relevant.
-4. Explain each term's role and the intuition behind the operation.
-5. Walk through a small numerical or conceptual example when practical.
-6. State assumptions, boundary conditions, and what changes when an input increases, decreases, or reaches an edge case.
-7. Explain how the paper derives or uses the equation; do not call a step "obvious" or "standard" without unpacking the part a newcomer needs.
-
-Preserve the distinction between equality, approximation, proportionality, optimization, probability, and expectation.
+Preserve distinctions among equality, approximation, proportionality, optimization, probability, expectation, correlation, and causation. For proofs, explain the strategy and dependency chain before walking through technical steps. Do not call a step "obvious" or "standard" when it hides knowledge the target reader needs.
 
 ### Algorithms and systems
 
-Trace inputs, transformations, state, outputs, training or fitting, and inference or deployment. Explain pseudocode line by line when it carries information not available in the prose. Record complexity, hyperparameters, initialization, stopping conditions, and failure behavior when reported.
+Trace inputs, transformations, state, outputs, training or fitting, and inference or deployment. Explain informative pseudocode, complexity, initialization, hyperparameters, stopping conditions, resource requirements, and reported failure behavior. Separate what is required by the method from one implementation choice.
 
 ### Figures and tables
 
-For every substantive figure or table, explain:
-
-- the question it is intended to answer;
-- how to read axes, legends, colors, panels, scales, uncertainty, and comparison groups;
-- the most important exact values or visible patterns;
-- the authors' interpretation and any reasonable caveat;
-- whether it supports the stated claim.
-
-Never refer to a visual as "self-explanatory." Include its figure or table number and page when available.
+For each visual that materially affects the argument, explain the question it answers, how to read it, the exact values or patterns that matter, the authors' interpretation, plausible caveats, and whether it supports the associated claim. Include figure or table number and page when available. Do not spend equal space on decorative or redundant visuals.
 
 ### Experiments and evaluation
 
-Explain the hypothesis, data source and splits, preprocessing, baselines, metrics, protocol, important settings, and statistical treatment. Define what each metric measures and which direction is better. Report exact numbers with units and uncertainty as written. Discuss fairness of comparisons, ablations, sensitivity analysis, threats to validity, and reproducibility gaps.
+Explain the hypothesis, data provenance and splits, preprocessing, controls, baselines, metrics, protocol, important settings, uncertainty, and statistical treatment. Define each metric and which direction is better. Report exact numbers with units and uncertainty as written. Examine comparison fairness, ablations, sensitivity, threats to validity, and reproducibility gaps.
 
-## Maintain fidelity
+## Create the active-recall card
 
-- Attach source locators to major claims, quantitative results, definitions, and interpretations. Prefer forms such as `Section 3.2, p. 7, Eq. 4` or `Table 2, p. 9`.
-- Clearly label statements as **Authors' claim**, **Interpretation**, **Teaching example**, or **Open question** whenever readers might confuse their status.
-- Do not invent motivations, derivations, experimental details, citations, or numerical values. Mark missing or ambiguous information explicitly.
-- Do not silently repair an apparent error in the paper. Quote or describe it, explain the suspected issue, and identify the uncertainty.
-- Preserve meaningful caveats and negative results. Do not turn correlation into causation or empirical performance into a universal guarantee.
-- Paraphrase and teach rather than copying long passages. Use short quotations only when exact wording matters.
-- Avoid unexplained jargon, circular definitions, and summaries that merely restate section headings.
+After the notes are complete, load `references/summary-card.md` and create `<output-root>/SUMMARY.CARD.md` from the paper model. The card is a worksheet for the reader, not another summary.
 
-## Verify the finished notes
+Tailor every substantive question to this paper's actual concepts, method, evidence, and weaknesses. Prefill bibliographic metadata and question text only. Keep every answer, confidence assessment, correction, and reflection field blank. Do not include solutions, hints, expected keywords, sample answers, or hidden answer keys.
 
-Before finishing, compare all files against the private coverage map and verify that:
+The card should make shallow familiarity uncomfortable: a reader who cannot reconstruct the whole dependency chain—problem -> assumptions -> method or argument -> evidence -> conclusion -> limits—connect claims to evidence, predict a counterfactual, and state the limits should discover exactly where their understanding breaks. At the same time, the post-check section should require reopening the notes, recording discrepancies without erasing the closed-book attempt, and turning each failure into a concrete study target.
 
-- every substantive top-level section has exactly one note file and the order matches the paper;
-- the abstract file links to every section note and all relative links resolve;
-- central claims, equations, algorithms, figures, tables, and results appear in the appropriate notes;
-- every technical term needed by a newcomer is defined before use;
-- exact values, signs, units, equation identifiers, and figure/table references match the source;
-- teaching examples are clearly distinguished from the paper's own examples or evidence;
-- cross-file terminology and notation are consistent;
-- a reader can explain the problem, reproduce the method at the level supported by the paper, interpret the evidence, and articulate the limitations without reopening the paper.
+## Maintain source fidelity
 
-Finally, report the created or updated files, which source format was used, and any source-quality or completeness limitations (including anything that format did not preserve). Do not claim close-reading equivalence when required content was unavailable.
+- Attach locators to major claims, exact results, definitions, and interpretations in the notes. Prefer `Section 3.2, p. 7, Eq. 4` or `Table 2, p. 9` when available.
+- Clearly label **Authors' claim**, **Evidence-supported conclusion**, **Interpretation**, **Teaching example**, and **Open question** whenever their status could be confused.
+- Never invent motivations, derivations, details, citations, or values. Mark missing or ambiguous information explicitly.
+- Do not silently repair an apparent paper error. Preserve it, explain the suspected problem, and state the uncertainty.
+- Preserve caveats, negative findings, and null results. Do not upgrade empirical performance into a universal guarantee.
+- Paraphrase and teach rather than copying long passages. Quote briefly only when exact wording matters.
+- When versions differ, analyze the user-pinned version or the latest version and record which one was used.
+
+## Verify before finishing
+
+Compare the finished artifacts against the private paper model and verify:
+
+- every substantive top-level section maps to one correctly ordered note file;
+- `00.abstract.md` links to every section file and to `../SUMMARY.CARD.md`, every section links back to `00.abstract.md`, and every relative link resolves;
+- central claims, mechanisms, equations, algorithms, evidence, and limitations are explained where they belong;
+- exact values, signs, units, identifiers, captions, and terminology match the source;
+- invented teaching material cannot be mistaken for paper evidence;
+- the recall card is in the output root, contains 8-12 paper-specific questions, exposes no answers or hints, and leaves all reader fields unfilled;
+- existing human-authored files were not overwritten;
+- a reader can use the notes to explain the paper and use the card to identify what they still cannot explain.
+
+Run the bundled structural validator after the content review:
+
+```bash
+python3 <skill-directory>/scripts/validate_outputs.py <output-root>
+```
+
+Fix every reported error before finishing. The validator checks the file contract, note numbering, bidirectional links, card question numbering and blank fields, common answer leakage, unreplaced placeholders, and one collapsed answer block per section self-check; it cannot establish factual correctness, completeness, or teaching quality, so do not use a clean validation result as a substitute for comparing the notes with the paper model.
+
+Finally report the files created or updated, the source identity and format used, and any source-quality or completeness limitations. Do not claim close-reading equivalence when material required for the argument was unavailable.

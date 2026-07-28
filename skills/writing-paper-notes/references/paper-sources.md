@@ -1,8 +1,8 @@
 # Paper sources: acquisition reference
 
-Loaded on demand by `writing-paper-notes` when acquiring a paper. The skill's `## Establish the source and output location` section defines the priority cascade (LaTeX source > HTML > PDF) and the fallback discipline; this document holds the venue-specific URLs, the format-availability matrix, and the exact commands.
+Loaded on demand by `writing-paper-notes` when acquiring a paper. The skill's `## Acquire a complete, readable source` section defines the priority cascade (LaTeX source > HTML > PDF) and the fallback discipline; this document holds the venue-specific URLs, the format-availability matrix, and the exact commands.
 
-Reuse the Read tool (which renders PDF pages visually via the `pages` parameter) and the `document-skills:pdf` skill (pdftotext, table extraction, OCR) for PDFs. Both are harness/plugin-provided and are referenced here by name.
+For PDFs, combine the environment's PDF-reading or rendering capability with searchable text extraction (`pdftotext`, table extraction, and OCR when needed). Tool names differ across hosts, so discover the available PDF capability instead of assuming a specific plugin name.
 
 ## Format-availability matrix
 
@@ -18,7 +18,7 @@ The cascade collapses to PDF immediately for venues with no LaTeX source and no 
 
 ## arXiv
 
-Normalize old-format ids (e.g. `cs.LG/0501001`) to the new form; the native `/html/` link is versioned (`v3`) and absent for old papers. Fetch the latest version unless the user pinned one.
+Preserve old-format identifiers such as `cs.LG/0501001`; they cannot be rewritten as modern numeric IDs. The native `/html/` link may be absent for old papers. Fetch the latest version unless the user pinned one, and retain an explicit `vN` suffix throughout acquisition when a version is pinned.
 
 ### LaTeX source (preferred)
 
@@ -32,7 +32,7 @@ Detect the format by Content-Type, not the filename:
 ```bash
 ID=2401.12345
 mkdir -p .paper-source && cd .paper-source
-curl -sL -D src.h -o src.bin "https://arxiv.org/e-print/$ID"
+curl -fsSL -D src.h -o src.bin "https://arxiv.org/e-print/$ID"
 ct=$(grep -i '^content-type:' src.h | tr -d '\r' | head -1)
 
 if printf '%s' "$ct" | grep -qi 'x-tex'; then
@@ -51,7 +51,7 @@ find extracted -type f \( -iname '*.png' -o -iname '*.pdf' -o -iname '*.eps' -o 
 find extracted -type f \( -iname '*.bib' -o -iname '*.bbl' \)
 ```
 
-Then use the Read tool on the root `.tex`, each `\input`'d file, and the `.bib` (or the compiled `.bbl` when `.bib` is absent - it carries the full reference list). Read figures directly from the tarball.
+Then read the root `.tex`, each `\input`'d file, and the `.bib` (or the compiled `.bbl` when `.bib` is absent - it carries the full reference list). Inspect figures directly from the tarball with the environment's image or PDF viewer.
 
 Gotchas:
 
@@ -65,11 +65,11 @@ Gotchas:
 Try the native render first; fall back to ar5iv for older papers that 404:
 
 ```bash
-curl -sL "https://arxiv.org/html/$ID" -o paper.html || \
-curl -sL "https://ar5iv.labs.arxiv.org/html/$ID" -o paper.html
+curl -fsSL "https://arxiv.org/html/$ID" -o paper.html || \
+curl -fsSL "https://ar5iv.labs.arxiv.org/html/$ID" -o paper.html
 ```
 
-Do not use WebFetch for full paper content - it converts the page to markdown via a small fast model and drops MathJax math, complex tables, and figures, which is exactly the material a close reading needs. Use WebFetch only for metadata checks (does an HTML version exist? what is the arXiv id? title or abstract?).
+Do not use a summarizing page-fetch tool for full paper content: model-mediated conversion can drop MathJax math, complex tables, and figures, which is exactly the material a close reading needs. Use such a fetcher only for metadata checks (does an HTML version exist? what is the arXiv id? title or abstract?).
 
 Convert preserving structure, math, and tables:
 
@@ -86,13 +86,13 @@ Prefer arXiv native `/html/` over ar5iv (first-party, versioned, more reliable);
 ### PDF (last resort)
 
 ```bash
-curl -sL "https://arxiv.org/pdf/$ID" -o paper.pdf
+curl -fsSL "https://arxiv.org/pdf/$ID" -o paper.pdf
 ```
 
 Read with both channels and combine - never one alone:
 
-- Read tool with the `pages` parameter (max 20 pages per request; required for PDFs over 10 pages) - presents pages visually, recovering layout, figures, tables, and text that extraction loses.
-- `document-skills:pdf` skill - `pdftotext` for exact searchable text, table extraction, and OCR (`ocrmypdf`/tesseract) for scanned or image-only PDFs.
+- Render and inspect PDF pages visually to recover layout, figures, tables, and text relationships that extraction loses. Work in page ranges when the viewer has a request limit.
+- Use `pdftotext` for searchable text, a structured table extractor when needed, and OCR (`ocrmypdf` or Tesseract) for scanned or image-only PDFs.
 
 ## ACL Anthology
 
@@ -121,19 +121,19 @@ No HTML article (the `.html` page is abstract-only), no source.
 
 `https://doi.org/<doi>` redirects to the publisher and is often paywalled. Before giving up, try open-access resolution.
 
-First query Unpaywall for an open-access URL:
+First query Unpaywall for an open-access URL when a genuine contact email is already configured or the user has supplied one. Do not invent an address or expose unrelated personal information merely to satisfy the API:
 
 ```bash
-curl -sL "https://api.unpaywall.org/v2/<doi>?email=<real-email>"
+curl -fsSL "https://api.unpaywall.org/v2/<doi>?email=<real-email>"
 # read best_oa_location.url from the JSON
 ```
 
-The `email=` parameter must be a genuine address; Unpaywall rejects `test@example.com`. It returns OA locations including arXiv, PubMed Central, repositories, and publisher OA.
+The `email=` parameter must be a genuine address; Unpaywall rejects `test@example.com`. If no appropriate address is available, skip this API and continue with publisher open-access links, repository search, and arXiv title search. Unpaywall returns OA locations including arXiv, PubMed Central, repositories, and publisher OA.
 
 If Unpaywall finds nothing, WebSearch the paper title for an arXiv preprint, then acquire via the arXiv path above. Only after both fail, state the limitation and request the source from the user.
 
 ## Per-format reading tactics
 
-- **LaTeX**: Read the root `.tex`, every `\input`'d file, and the `.bib` or `.bbl`. Read figures (`.png`/`.pdf`/`.eps`) directly from the extracted tarball with the Read tool. Math, tables, and structure are exact.
+- **LaTeX**: Read the root `.tex`, every `\input`'d file, and the `.bib` or `.bbl`. Inspect figures (`.png`/`.pdf`/`.eps`) directly from the extracted tarball with an image or PDF viewer. Math, tables, and structure are exact.
 - **HTML**: `curl` the raw HTML, then `pandoc -f html -t markdown` (or read the raw HTML directly). MathJax renders as `$...$` or `$$...$$` via pandoc; if reading raw HTML, grep `<script type="math/tex">` and `<math>` blocks to recover formulas.
-- **PDF**: Read tool `pages` parameter for visual layout, figures, and tables; `document-skills:pdf` for exact text, table extraction, and OCR on scans. Combine both channels; do not rely on either alone.
+- **PDF**: combine visual page rendering for layout, figures, and tables with text extraction, table parsing, and OCR on scans. Do not rely on either visual or textual inspection alone.

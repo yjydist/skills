@@ -1,0 +1,56 @@
+{
+  "skill_name": "writing-paper-notes",
+  "evals": [
+    {
+      "id": 1,
+      "name": "adam-algorithm-and-convergence",
+      "prompt": "请精读 arXiv:1412.6980（Adam: A Method for Stochastic Optimization）的最新版本，用中文为没有优化算法背景的读者制作完整学习笔记。按论文顶层章节拆分 Markdown 文件，既要讲清直觉，也要保留关键公式、算法、假设、实验结果和局限。",
+      "expected_output": "A Chinese close reading under notes/ plus a root-level, unfilled, paper-specific SUMMARY.CARD.md that tests reconstruction of Adam's mechanism, evidence, assumptions, counterfactuals, and limits.",
+      "files": [],
+      "expectations": [
+        "The output root contains SUMMARY.CARD.md and notes/00.abstract.md, with one ordered note file for every substantive top-level paper section and substantive appendix.",
+        "SUMMARY.CARD.md contains 8-12 numbered Adam-specific questions, blank response and confidence fields, a post-check error-repair section, and no answers, hints, expected keywords, or answer key.",
+        "The card tests Adam's moment estimates, bias correction, update behavior, empirical evidence, convergence assumptions or failure conditions, a counterfactual, and transfer to a new optimization setting without embedding the answers in its questions.",
+        "The notes accurately explain the Adam update equations, define every central symbol, and use a worked or conceptual example to explain why the first- and second-moment estimates are bias-corrected.",
+        "The notes report important default hyperparameters and headline empirical comparisons with source locators, while distinguishing reported evidence from broader interpretation.",
+        "The convergence discussion identifies the paper version's actual assumptions and scope rather than presenting Adam as universally convergent.",
+        "notes/00.abstract.md contains a claim-evidence table, limitations, a prerequisite glossary for entering the section notes, a complete linked reading map, and a valid relative link to ../SUMMARY.CARD.md.",
+        "Each substantive section ends with at least two active-recall questions whose answers are hidden in collapsed details blocks."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "transformer-architecture-and-evidence",
+      "prompt": "请完整阅读 arXiv:1706.03762（Attention Is All You Need）的最新版本，并用中文写一套面向初学者但技术细节完整的精读笔记。需要按章节组织，解释模型的数据流、核心公式、训练与评估、表格和消融实验，同时明确论文证据能支持和不能支持的结论。",
+      "expected_output": "A Chinese close reading under notes/ plus a root-level, unfilled, paper-specific SUMMARY.CARD.md that tests the Transformer architecture, equations, evidence, ablations, limitations, counterfactuals, and transfer.",
+      "files": [],
+      "expectations": [
+        "The output root contains SUMMARY.CARD.md and notes/00.abstract.md, with ordered note files covering the paper's substantive top-level sections and technical appendices.",
+        "SUMMARY.CARD.md contains 8-12 numbered Transformer-specific questions, blank response and confidence fields, a post-check error-repair section, and no answers, hints, expected keywords, or answer key.",
+        "The card tests scaled dot-product attention, multi-head attention, positional information, masking or autoregressive decoding, central translation evidence, an ablation or counterfactual, limitations, and transfer without stating the answers.",
+        "The notes accurately reproduce and unpack the central attention equations, define Q, K, V and relevant dimensions, and explain the scaling term with operational intuition.",
+        "The notes trace encoder and decoder data flow, residual connections, normalization, feed-forward layers, positional encoding, and inference masking without conflating their roles.",
+        "The evaluation notes explain the translation tasks, metrics, baselines, headline results, training cost, and Table 3 ablations with exact values and source locators where the paper reports them.",
+        "The notes separate what the 2017 experiments demonstrate from later claims about Transformers, and discuss meaningful assumptions, limitations, and reproducibility boundaries.",
+        "notes/00.abstract.md contains a claim-evidence table, a prerequisite glossary for entering the section notes, a complete linked reading map, and a valid relative link to ../SUMMARY.CARD.md."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "ioannidis-statistical-argument",
+      "prompt": "请精读 DOI:10.1371/journal.pmed.0020124（Why Most Published Research Findings Are False），用中文写成适合没有统计学基础读者的分章节学习笔记。请完整重建论文的概率模型和论证链，区分数学模型、作者推论、现实经验判断与尚未验证的部分，并解释表格、例子、偏倚、统计功效和局限。",
+      "expected_output": "A Chinese close reading under notes/ plus a root-level, unfilled, paper-specific SUMMARY.CARD.md that tests the PPV model, argument structure, evidence boundaries, bias, counterfactuals, and transfer.",
+      "files": [],
+      "expectations": [
+        "The output root contains SUMMARY.CARD.md and notes/00.abstract.md, with ordered note files covering every substantive top-level section of the article.",
+        "SUMMARY.CARD.md contains 8-12 numbered paper-specific questions, blank response and confidence fields, a post-check error-repair section, and no answers, hints, expected keywords, or answer key.",
+        "The card tests the PPV model, prior odds, statistical power, alpha, bias, study-field corollaries, evidence boundaries, a counterfactual, and transfer to a concrete research scenario without stating the answers.",
+        "The notes accurately derive or explain the positive predictive value relationship, define R, alpha, beta, power, and bias, and give a newcomer-friendly numerical or conceptual example.",
+        "The notes explain the article's tables and corollaries, including how changes in prior odds, power, number of teams, flexibility, and bias affect the argument, with source locators.",
+        "The notes explicitly distinguish consequences of the mathematical model from empirical measurements of real research fields and avoid treating the title as a universally observed fact.",
+        "The notes discuss the model's assumptions, omitted dependencies, applicability boundaries, and the status of the proposed remedies.",
+        "notes/00.abstract.md contains a claim-evidence table, a prerequisite glossary for entering the section notes, a complete linked reading map, and a valid relative link to ../SUMMARY.CARD.md."
+      ]
+    }
+  ]
+}
