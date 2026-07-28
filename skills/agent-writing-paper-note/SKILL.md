@@ -1,6 +1,6 @@
 ---
 name: agent-writing-paper-note
-description: Analyze an academic paper end to end and write a structured set of beginner-friendly Markdown reading notes that preserve the depth and learning value of a close reading. Use when the user asks to read, analyze, explain, study, or take notes on a paper, preprint, journal article, conference paper, or technical manuscript, especially when the output should be split by the paper's sections under a notes/ directory.
+description: Analyze an academic paper end to end and write a structured set of beginner-friendly Markdown reading notes that preserve the depth and learning value of a close reading. Use when the user asks to read, analyze, explain, study, or take notes on a paper, preprint, journal article, conference paper, or technical manuscript, especially when the output should be split by the paper's sections under a notes/ directory. Accepts a local file, an arXiv ID or URL, a DOI, or a paper title; fetches the most parseable open-access source available.
 ---
 
 # Write Paper Notes
@@ -9,13 +9,24 @@ Produce a self-contained guided reading that lets a reader with no prior knowled
 
 ## Establish the source and output location
 
-1. Locate every source artifact supplied by the user, including the paper, supplementary material, appendices, and any linked code needed to interpret the paper.
-2. Read the entire paper before drafting notes. Include footnotes, figure and table captions, appendices, and supplementary material when they affect the argument or evidence.
-3. For a PDF, inspect both extracted text and rendered pages. Use rendered pages to recover layout, formulas, diagrams, tables, or text that extraction loses. Apply OCR when the paper is scanned.
-4. Create `notes/` in the user-specified output directory. If none is specified, create it beside the primary paper file; if there is no local paper file, create it in the current working directory.
-5. Preserve existing note files unless the user explicitly asks to replace them. When a target filename already exists, update it only if it clearly belongs to the same paper; otherwise stop and report the conflict.
+1. Resolve what the user gave you: a local file or directory, an arXiv ID or URL, a DOI, an ACL Anthology / PMLR / NeurIPS / OpenReview URL, a general paper URL, or a bare title. Normalize to a canonical identifier and venue. Cache every download into a local working directory (e.g. `.paper-source/` beside the eventual `notes/`), never into the output directory.
 
-Do not begin drafting from the abstract alone. If the full paper is unavailable or materially unreadable, state the limitation and request the missing source rather than presenting abstract-only notes as a close reading.
+2. Acquire the most parseable source available, trying each in turn and stopping at the first complete paper (one containing the main body sections, not just the abstract or figures):
+   - **(1) LaTeX source - preferred.** Exact math, structure, figures, and tables with no extraction loss.
+   - **(2) HTML - second choice.** Structured and easy to parse; loses little.
+   - **(3) PDF - last resort.** Hard to parse; layout, math, and tables are easily lost.
+
+   The venue-specific URLs, format-availability matrix, and exact curl/tar/pandoc commands are in `references/paper-sources.md` - load it now. Note that ACL, PMLR, and NeurIPS offer no LaTeX source and no full-text HTML, so for them the cascade collapses to PDF immediately. If a higher-priority format is unavailable, drop to the next format rather than asking the user.
+
+3. For a DOI behind a paywall, query Unpaywall (https://api.unpaywall.org/v2/<doi>?email=<real-email>) for an open-access URL before giving up; if it finds nothing, search arXiv by the paper title for a preprint. If only a bare title was given, search the web first to find an arXiv or open-access copy, then proceed.
+
+4. Read the entire paper before drafting notes. Include footnotes, figure and table captions, appendices, and supplementary material when they affect the argument or evidence. For ACL/NeurIPS this means any separate Supplement download; for arXiv it means ancillary files and the .bib/.bbl reference list.
+
+5. Create `notes/` in the user-specified output directory. If none is specified, create it in the current working directory - never inside the download cache.
+
+6. Preserve existing note files unless the user explicitly asks to replace them. When a target filename already exists, update it only if it clearly belongs to the same paper; otherwise stop and report the conflict.
+
+Do not begin drafting from the abstract alone. If all three formats fail after the open-access resolution steps above, state the limitation and request the missing source rather than presenting abstract-only notes as a close reading.
 
 ## Map the paper before writing
 
@@ -140,4 +151,4 @@ Before finishing, compare all files against the private coverage map and verify 
 - cross-file terminology and notation are consistent;
 - a reader can explain the problem, reproduce the method at the level supported by the paper, interpret the evidence, and articulate the limitations without reopening the paper.
 
-Finally, report the created or updated files and any source-quality or completeness limitations. Do not claim close-reading equivalence when required content was unavailable.
+Finally, report the created or updated files, which source format was used, and any source-quality or completeness limitations (including anything that format did not preserve). Do not claim close-reading equivalence when required content was unavailable.

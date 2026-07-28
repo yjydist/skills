@@ -1,4 +1,4 @@
 interface:
   display_name: "Beginner Paper Notes"
   short_description: "Turn papers into beginner-friendly close-reading notes"
-  default_prompt: "Use $agent-writing-paper-note to analyze this paper and write section-by-section notes for a complete beginner."
+  default_prompt: "Use $agent-writing-paper-note to fetch and analyze this paper and write section-by-section notes for a complete beginner."
