@@ -1,6 +1,6 @@
 # Paper sources: acquisition reference
 
-Loaded on demand by `agent-writing-paper-note` when acquiring a paper. The skill's `## Establish the source and output location` section defines the priority cascade (LaTeX source > HTML > PDF) and the fallback discipline; this document holds the venue-specific URLs, the format-availability matrix, and the exact commands.
+Loaded on demand by `writing-paper-notes` when acquiring a paper. The skill's `## Establish the source and output location` section defines the priority cascade (LaTeX source > HTML > PDF) and the fallback discipline; this document holds the venue-specific URLs, the format-availability matrix, and the exact commands.
 
 Reuse the Read tool (which renders PDF pages visually via the `pages` parameter) and the `document-skills:pdf` skill (pdftotext, table extraction, OCR) for PDFs. Both are harness/plugin-provided and are referenced here by name.
 
