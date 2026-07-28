@@ -1,4 +1,0 @@
-interface:
-  display_name: "Beginner Paper Notes"
-  short_description: "Turn papers into beginner-friendly close-reading notes"
-  default_prompt: "Use $writing-paper-notes to fetch and analyze this paper and write section-by-section notes for a complete beginner."
