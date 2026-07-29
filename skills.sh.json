@@ -6,7 +6,10 @@
             "title": "Research",
             "description": "Personal research required skills",
             "skills": [
-                "writing-paper-notes"
+                "study-paper",
+                "writing-paper-notes",
+                "develop-paper-ideas",
+                "reproduce-paper"
             ]
         }
     ]

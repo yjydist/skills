@@ -1,0 +1,38 @@
+{
+  "skill_name": "develop-paper-ideas",
+  "evals": [
+    {
+      "id": 1,
+      "name": "evidence-grounded-directions",
+      "prompt": "基于这篇论文的实验和局限，给我三个值得继续研究的方向。",
+      "expected_output": "A small set of paper-specific, falsifiable ideas grounded in located evidence, returned in conversation without file changes.",
+      "expectations": [
+        "Each idea includes an observed trigger and locator, inference, falsifiable question, first test, and risks.",
+        "Generic bigger-model, another-dataset, or combine-A-and-B suggestions are rejected unless mechanistically justified.",
+        "No ideas/ directory or workspace file is created."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "novelty-boundary",
+      "prompt": "这个论文没有做跨语言实验，所以跨语言版本肯定是一个全新的研究空白，对吗？",
+      "expected_output": "A calibrated correction that distinguishes paper omission from verified novelty and identifies the primary-literature search needed.",
+      "expectations": [
+        "The response does not call the direction novel without a dedicated prior-art check.",
+        "The candidate idea remains attributable and falsifiable.",
+        "Search scope and date are required before any novelty conclusion."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "execution-boundary",
+      "prompt": "从这篇论文找一个改进点，然后直接跑实验验证。",
+      "expected_output": "The idea can be developed, but experiment execution is handed to reproduce-paper and requires an explicit fidelity target and authorization.",
+      "expectations": [
+        "The skill does not silently execute or write an experiment.",
+        "The proposed first test includes a baseline and decision criterion.",
+        "The execution boundary points to $reproduce-paper."
+      ]
+    }
+  ]
+}

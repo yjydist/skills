@@ -1,0 +1,50 @@
+{
+  "skill_name": "reproduce-paper",
+  "evals": [
+    {
+      "id": 1,
+      "name": "ambiguous-reproduction-gate",
+      "prompt": "帮我复现这篇论文。",
+      "expected_output": "A clarification request that locks the fidelity mode, target, allowed changes, resource boundary, and success evidence before any plan or action.",
+      "expectations": [
+        "No files, downloads, environment setup, or commands occur before the gate is resolved.",
+        "The response offers exact rerun, claim-targeted reproduction, and independent idea implementation as distinct meanings.",
+        "No default mode or silent substitution is selected."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "exact-rerun-blocker",
+      "prompt": "严格按论文当年的官方代码、数据和配置复跑表 2，不允许替换任何组件；如果缺东西就停下来。",
+      "expected_output": "An exact-rerun workflow pinned to paper-era artifacts that reports a blocker instead of modernizing an unavailable critical component.",
+      "expectations": [
+        "Paper, code, data, configuration, environment, model, and evaluation identities are pinned.",
+        "Unavailable fidelity-critical artifacts block the affected target.",
+        "A different mode is offered only as a separately approved alternative."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "claim-targeted-reproduction",
+      "prompt": "只复现论文图 3 的趋势。可以换成公开数据集，但指标定义和模型配置保持不变，预算最多 4 GPU 小时；趋势方向一致就算成功。",
+      "expected_output": "A claim-targeted workflow that records the exact locator, approved substitution, resource cap, acceptance rule, and evidence package.",
+      "expectations": [
+        "The conclusion is limited to the named trend and controlled setup.",
+        "The public-dataset substitution is explicit and its implications are reported.",
+        "Execution scales only after a smaller diagnostic succeeds."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "independent-modern-implementation",
+      "prompt": "不用官方仓库，用当前 PyTorch 自己实现论文的核心思路；只要机制一致，不要求复现论文数值。",
+      "expected_output": "An independent implementation that defines preserved invariants and modernized components and never claims to reproduce the paper's reported results.",
+      "expectations": [
+        "The work is labeled implementation, adaptation, or validation rather than exact reproduction.",
+        "Core mechanisms or invariants are stated before implementation.",
+        "Deterministic mechanism checks precede broader experiments.",
+        "Reported evidence distinguishes paper, current run, deviations, and adaptation."
+      ]
+    }
+  ]
+}
