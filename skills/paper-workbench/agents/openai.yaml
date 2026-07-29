@@ -1,0 +1,4 @@
+interface:
+  display_name: "Paper Workbench"
+  short_description: "Study, reproduce, and extend one research paper"
+  default_prompt: "Use $paper-workbench to help me understand, reproduce, or develop ideas from this paper."
