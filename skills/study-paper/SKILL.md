@@ -1,16 +1,66 @@
 ---
 name: study-paper
-description: Explain and analyze one specific academic paper interactively, including focused questions about its concepts, equations, proofs, experiments, claims, or official implementation. Use when the user wants to understand a paper or inspect how its method maps to code without requesting a complete durable note set, a reproduction, or research-idea development. Answer in the conversation by default and do not modify files unless the user explicitly asks to save or update material.
+description: Explain and analyze one specific academic paper interactively while maintaining a lightweight .study/TODO.md progress checklist and .study/STUDY.md teaching transcript. Use when the user wants to understand a paper or inspect how its method maps to code without requesting a complete section-by-section note set, a reproduction, or research-idea development.
 ---
 
 # Study Paper
 
-Help the user solve the present understanding problem about one paper. Keep the work conversational and proportionate to the question.
+Help the user understand one paper through an interactive teaching loop. Keep the explanation conversational and proportionate to the question while preserving a lightweight learning trail.
+
+## Maintain the study trail
+
+At the start of the study task, create `.study/` in the user's current study workspace. Do not place it inside this skill's directory. Create or resume:
+
+- `.study/TODO.md`: the progress plan for the current paper;
+- `.study/STUDY.md`: an append-only record of completed teaching exchanges.
+
+Never overwrite existing study history. If the files already exist for the same paper, read them and resume from the first unchecked item. Preserve completed items and prior transcript entries.
+
+In `TODO.md`, identify the paper and version, then list every currently known teaching item using valid Markdown task syntax:
+
+```markdown
+# Study TODO
+
+Paper: <title and version>
+
+- [ ] <one observable learning objective>
+- [ ] <next objective>
+```
+
+Make each item small enough to teach and verify in one focused exchange. Order prerequisites before dependent concepts. Add newly discovered prerequisites or follow-up items when needed; do not pretend the initial plan is exhaustive.
+
+For each unchecked item:
+
+1. Teach the item using the relevant evidence and locators.
+2. Check understanding with a focused question, small derivation, example, comparison, or user confirmation appropriate to the item.
+3. Treat the item as passed only when the learner demonstrates understanding or explicitly confirms that the issue is resolved. Do not mark an item complete merely because an explanation was delivered.
+4. Append the relevant learner-tutor exchange to `STUDY.md`, including the item, explanation, understanding check, learner response, and any remaining caveat.
+5. Only after the transcript is safely appended, change that item's checkbox in `TODO.md` from `- [ ]` to `- [x]`.
+
+Use a stable entry structure:
+
+```markdown
+## <completed item>
+
+### Learner
+<question or starting understanding>
+
+### Tutor
+<teaching response>
+
+### Check
+<check and learner response>
+
+### Outcome
+Passed. <remaining caveat, if any>
+```
+
+If the learner has not yet passed an item, leave it unchecked and do not add a completed entry. Continue the teaching dialogue in the conversation, then record it once the item passes. Before ending each turn, keep both files consistent with the actual state.
 
 ## Keep the boundary narrow
 
-- Answer in the conversation unless the user explicitly asks to save or update material.
-- Do not create a paper workspace, notes tree, summary card, ideas file, reproduction plan, or experiment directory by default.
+- Use only `.study/TODO.md` and `.study/STUDY.md` for default persistence.
+- Do not create a broader paper workspace, notes tree, summary card, ideas file, reproduction plan, or experiment directory by default.
 - Use `$writing-paper-notes` when the user explicitly requests a complete, durable, section-by-section close reading.
 - Use `$develop-paper-ideas` when the primary goal is critique that produces candidate research directions.
 - Use `$reproduce-paper` only when the user explicitly asks to plan, run, debug, or compare a reproduction or independent implementation.
@@ -59,4 +109,4 @@ Do not install environments, modify code, download large artifacts, or run exper
 
 Distinguish paper statements, official-code observations, external evidence, interpretation, and unknowns whenever they could be confused. Never present a later implementation choice or community convention as something established by the paper.
 
-Finish with the direct answer, supporting evidence, important uncertainty, and the most useful next question when one is clear. List files only if the user explicitly asked for a saved change.
+Finish with the direct answer, supporting evidence, important uncertainty, the current checklist progress, and the most useful next unchecked item when one is clear.

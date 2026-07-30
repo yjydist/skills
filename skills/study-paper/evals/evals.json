@@ -5,11 +5,14 @@
       "id": 1,
       "name": "focused-equation-explanation",
       "prompt": "解释这篇论文的公式 4：每个符号是什么意思，它解决什么问题，和前后公式有什么关系？",
-      "expected_output": "A focused conversational explanation with paper locators, assumptions, and a small example. No files or workspace are created.",
+      "expected_output": "A focused conversational explanation with paper locators, assumptions, and a small example. A lightweight .study checklist and teaching transcript are maintained.",
       "expectations": [
         "The response establishes the paper version and reads the relevant surrounding source.",
         "Every necessary symbol and assumption is defined.",
         "Paper statements and interpretation are distinguishable.",
+        ".study/TODO.md lists observable teaching objectives with Markdown checkboxes.",
+        "An objective is checked only after the learner demonstrates understanding or explicitly confirms resolution.",
+        "A passed objective's teaching exchange is appended to .study/STUDY.md before its checkbox is checked.",
         "No notes/, SUMMARY.CARD.md, ideas/, REPRODUCT.md, or reproduce/ artifact is created."
       ]
     },
@@ -21,6 +24,7 @@
       "expectations": [
         "The response traces the relevant executed code path rather than relying only on filenames or README text.",
         "Paper requirements, repository choices, and mismatches are separated.",
+        "The learning objectives and completed teaching exchanges are tracked under .study/.",
         "The task is not relabeled as reproduction and no reproduction artifacts are created."
       ]
     },
