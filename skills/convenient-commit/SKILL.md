@@ -1,26 +1,25 @@
 ---
 name: convenient-commit
-description: -|
-  Analyze all uncommitted Git changes, divide them into coherent atomic commit units, and create separate commits following Conventional Commits. 
-  Use when the user asks to organize, split, or commit mixed repository changes.
+description: Analyze all uncommitted Git changes, divide them into the smallest meaningful and independently reviewable, verifiable, and revertible units, and create separate commits following Conventional Commits. Use when the user asks to organize, split, or commit mixed repository changes.
 ---
 
 # Convenient Commit
 
-Analyze all uncommitted changes in the current Git repository, divide them into appropriately scoped logical commit units, and commit each unit separately using Conventional Commits.
+Analyze all uncommitted changes in the current Git repository, divide them into the smallest meaningful commit units, and commit each unit separately using Conventional Commits.
 
-A logical commit unit is a coherent group of changes that represents one clear intent and can be independently understood, reviewed, verified, and reverted.
+A commit unit is one semantic claim: its commit message states the claim and its diff contains exactly the changes needed to make that claim true. It must be independently understandable, reviewable, verifiable, and revertible.
 
 ## Default behavior
 
 Execute the complete workflow automatically:
 
 1. Inspect all uncommitted changes.
-2. Determine the logical commit units.
-3. Stage each unit precisely.
-4. Validate the staged changes.
-5. Create the commits.
-6. Report only the hashes and messages of the newly created commits.
+2. Identify the semantic change atoms, including separate atoms inside the same file or hunk.
+3. Draft a message for each candidate unit before staging it.
+4. Split and audit the candidates until each is the smallest meaningful unit.
+5. Stage and validate each unit precisely.
+6. Create the commits in dependency order.
+7. Report only the hashes and messages of the newly created commits.
 
 Do not ask the user to approve the commit plan unless a genuine ambiguity or safety risk prevents a reliable decision.
 
@@ -66,63 +65,72 @@ Use recent commit history to infer the repository's preferred:
 
 If the repository has no clear convention, use concise English commit messages.
 
-## Commit-unit principles
+## Smallest meaningful commit
 
-Partition changes by intent, not merely by file.
+Partition changes by semantic outcome, not by feature request, ticket, file, directory, or module.
 
-Each commit must represent one coherent logical change.
+A commit is the smallest meaningful unit when all of the following are true:
 
-Prefer commits that are:
+* its message describes one clear result
+* every included change directly contributes to that result
+* all changes required to complete and verify that result are included
+* no proper subset could be a valid, independently meaningful commit
+* removing the commit would reverse that result without reversing an independent result
 
-* logically cohesive
-* independently understandable
-* independently reviewable
-* independently revertible
-* as independently verifiable as practical
+Interpret smallest semantically, not numerically. Do not use line count, file count, or hunk count as the unit of meaning. Do not create mechanical micro-commits, incomplete scaffolding, or other states with no independently useful center.
 
-Do not create arbitrary commits merely to reduce line count or file count.
+Treat each independently observable behavior, fix, refactoring, configuration outcome, documentation outcome, or maintenance result as a separate change atom. Identify separate atoms even when they appear in the same file or diff hunk.
 
-Do not combine unrelated changes just because they modify the same file or module.
+Group atoms only when a hard dependency makes separate commits incomplete, misleading, unbuildable, or unverifiable. Shared context is not a hard dependency. Belonging to the same feature, ticket, layer, module, or file is not sufficient reason to combine atoms.
 
-Do not separate tightly coupled changes merely because they occur in different files.
+## Message-first partitioning
 
-## Grouping rules
+Draft the Conventional Commit message before staging a candidate unit. Treat the message as the promise and the diff as its proof.
 
-Normally keep the following together:
+For each candidate:
 
-* a feature and the tests directly verifying that feature
-* a bug fix and its regression test
-* an API change and the immediately required caller updates
-* a dependency change and its corresponding lockfile update
-* an implementation change and documentation required to explain that same change
+1. Write the narrowest message that describes its observable result.
+2. Select only the implementation and direct supporting evidence required by that message.
+3. Apply the commit-unit audit below.
+4. Split the candidate whenever the audit reveals more than one independently meaningful result.
+5. Repeat until every candidate passes.
 
-Normally keep the following separate:
+Apply these five checks:
 
-* unrelated features
-* unrelated bug fixes
-* behavior changes and unrelated refactoring
-* pure formatting and semantic changes
-* mechanical renames and functional changes
-* dependency upgrades and unrelated source changes
-* generated artifacts and unrelated handwritten changes
-* CI changes and unrelated application changes
-* documentation changes unrelated to the implementation being committed
+1. **Single-center check:** Express the result as one precise imperative description. Conjunctions such as `and`, slashes, lists, or umbrella terms such as `misc`, `various`, and `cleanup` are strong signals that the candidate contains multiple centers. A conjunction is acceptable only when it describes one technically inseparable operation.
+2. **Necessity check:** Confirm that every file and hunk is necessary for the message. Move any change that the message does not explain to another unit.
+3. **Separability check:** Ask whether a reviewer could reasonably accept one subset and reject another. If yes, split them.
+4. **Revertibility check:** Ask whether one subset could be reverted while intentionally retaining another. If yes, split them.
+5. **Validity check:** Confirm that the candidate leaves the repository in a usable state and passes the validation relevant to its claim. Never create an intentionally broken intermediate commit.
 
-A refactoring may be committed before a dependent feature when doing so produces a cleaner and independently valid history.
+The message may describe an operation whose mechanical consequences span many files. For example, `refactor(api): rename createUser to registerUser` can include the declaration, all required callers, and direct tests because those edits are consequences of the single rename.
 
-Order commits according to dependency relationships. Foundational changes should precede changes that depend on them.
+## Split and grouping rules
 
-## Commit size
+Default to separate commits for:
 
-There is no fixed line-count or file-count limit.
+* independently usable sub-capabilities within one larger feature
+* independent fixes in the same module, file, or hunk
+* a behavior-preserving preparatory refactoring and a later behavior change when each is valid alone
+* formatting or mechanical renames and unrelated semantic changes
+* independent configuration, documentation, CI, dependency, generated, or maintenance changes
+* tests that have an independent purpose and do not directly verify another changed behavior
 
-A commit is appropriately sized when it contains the complete implementation of one clear intent and excludes unrelated intent.
+Keep changes together only when they jointly express one semantic claim, including:
 
-Do not over-split one logical change into artificial micro-commits.
+* a behavior change and the focused tests or regression tests that directly verify it
+* an API or schema change and the caller, consumer, or migration updates required for the commit to remain valid
+* a dependency declaration and its corresponding lockfile update
+* handwritten source and generated artifacts that are two required representations of the same change
+* implementation and documentation that must change together to avoid an incorrect or unusable interface
 
-Do not create commits that contain only meaningless intermediate states.
+Put an independently valid foundational refactoring before the commits that depend on it. Order all units according to their hard dependencies.
 
-Whenever practical, each commit should leave the repository in a buildable and testable state.
+## Large-candidate review
+
+There is no fixed line-count or file-count limit. Size is a warning signal, not a partitioning rule.
+
+When a candidate spans many files, hunks, behaviors, or repository areas, perform a second message-first audit even if it passed once. Keep it large only when every included atom is necessary for the same claim and any further split would produce an incomplete, invalid, or misleading commit. Keep that reasoning internal.
 
 ## Splitting files and hunks
 
@@ -290,9 +298,9 @@ feat(api)!: replace legacy pagination parameters
 
 Before each commit:
 
-1. Confirm that the staged diff contains only the intended logical commit unit.
-2. Confirm that all files necessary for that unit are included.
-3. Confirm that unrelated hunks are not staged.
+1. Reapply all five commit-unit checks to the complete staged diff.
+2. Confirm that the staged diff contains only the claim made by the drafted message.
+3. Confirm that all files necessary to implement and verify that claim are included.
 4. Check for accidental debug code, generated noise, or sensitive data.
 5. Run the smallest relevant validation available.
 
@@ -310,6 +318,8 @@ Prefer targeted validation for the current commit over repeatedly running an unn
 
 Run broader validation after all commits when practical.
 
+Require each commit to remain buildable and to pass the checks relevant to its claim. If two atoms can pass only when applied together, treat that as evidence of a hard dependency and keep them in one unit. Do not trade a valid history for a larger number of commits.
+
 If validation fails because of the changes being committed, fix the issue only when the correction is clearly within the current intent.
 
 If the failure is unrelated, pre-existing, or cannot be safely resolved, stop and report the blocker instead of creating a misleading commit.
@@ -318,13 +328,14 @@ If the failure is unrelated, pre-existing, or cannot be safely resolved, stop an
 
 For every logical commit unit:
 
-1. Stage only the files and hunks belonging to that unit.
-2. Inspect the complete staged diff.
-3. Run relevant validation.
-4. Generate a precise Conventional Commit message.
-5. Create the commit.
-6. Verify that the commit was successfully created.
-7. Continue with the remaining uncommitted changes.
+1. Start from the candidate's drafted Conventional Commit message.
+2. Stage only the files and hunks required by that message.
+3. Inspect and audit the complete staged diff against the message.
+4. Run relevant validation.
+5. Finalize the message without widening it to accommodate unrelated changes.
+6. Create the commit.
+7. Verify that the commit was successfully created.
+8. Continue with the remaining uncommitted changes.
 
 Do not:
 
