@@ -1,42 +1,27 @@
 ---
 name: convenient-commit
 description: Analyze all uncommitted Git changes, divide them into the smallest meaningful and independently reviewable, verifiable, and revertible units, and create separate commits following Conventional Commits. Use when the user asks to organize, split, or commit mixed repository changes.
+allowed-tools: Bash
+context: fork
+disable-model-invocation: true
 ---
 
 # Convenient Commit
 
-Analyze all uncommitted changes in the current Git repository, divide them into the smallest meaningful commit units, and commit each unit separately using Conventional Commits.
+Split all uncommitted changes in the current repository into the smallest meaningful commit units, and commit each unit separately as a Conventional Commit.
 
-A commit unit is one semantic claim: its commit message states the claim and its diff contains exactly the changes needed to make that claim true. It must be independently understandable, reviewable, verifiable, and revertible.
+A commit unit is one semantic claim: the message states the claim and the diff contains exactly the changes needed for it, so it can be reviewed, verified, and reverted independently. Keep the analysis internal and never print the commit plan.
 
-## Default behavior
+## Workflow
 
-Execute the complete workflow automatically:
+1. Inspect the repository state and its commit conventions.
+2. Partition the changes into commit units.
+3. For each unit in dependency order: stage it precisely, run the commit checklist, validate it, and create the commit.
+4. Run the completion checks and report only the new commits.
 
-1. Inspect all uncommitted changes.
-2. Identify the semantic change atoms, including separate atoms inside the same file or hunk.
-3. Draft a message for each candidate unit before staging it.
-4. Split and audit the candidates until each is the smallest meaningful unit.
-5. Stage and validate each unit precisely.
-6. Create the commits in dependency order.
-7. Report only the hashes and messages of the newly created commits.
+Do not ask the user to approve the plan unless a genuine ambiguity or safety risk prevents a reliable decision.
 
-Do not ask the user to approve the commit plan unless a genuine ambiguity or safety risk prevents a reliable decision.
-
-Do not print the commit plan during normal execution. Keep the analysis internal.
-
-## Repository inspection
-
-Inspect all relevant repository state before making any commit:
-
-* staged changes
-* unstaged changes
-* untracked files
-* recent commit history
-* repository-specific contribution or agent instructions
-* available build, lint, formatting, and test commands
-
-Use commands such as:
+## Inspection
 
 ```bash
 git status --short
@@ -46,363 +31,155 @@ git ls-files --others --exclude-standard
 git log -n 20 --format="%h %s"
 ```
 
-Also inspect relevant repository instructions when present, including files such as:
+Read repository instructions when present, such as `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md`. Infer commit-message language, scope naming, capitalization, and style from recent history. If the repository has no convention, or no commits yet, use concise English.
 
-```text
-AGENTS.md
-CLAUDE.md
-CONTRIBUTING.md
-README.md
-```
+## Partitioning
 
-Use recent commit history to infer the repository's preferred:
+Partition by semantic outcome, not by file, module, ticket, or line count. Draft each unit's message before staging it: the message is the promise and the diff is the proof.
 
-* commit-message language
-* scope naming
-* capitalization
-* terminology
-* Conventional Commit style
+Split by default:
 
-If the repository has no clear convention, use concise English commit messages.
-
-## Smallest meaningful commit
-
-Partition changes by semantic outcome, not by feature request, ticket, file, directory, or module.
-
-A commit is the smallest meaningful unit when all of the following are true:
-
-* its message describes one clear result
-* every included change directly contributes to that result
-* all changes required to complete and verify that result are included
-* no proper subset could be a valid, independently meaningful commit
-* removing the commit would reverse that result without reversing an independent result
-
-Interpret smallest semantically, not numerically. Do not use line count, file count, or hunk count as the unit of meaning. Do not create mechanical micro-commits, incomplete scaffolding, or other states with no independently useful center.
-
-Treat each independently observable behavior, fix, refactoring, configuration outcome, documentation outcome, or maintenance result as a separate change atom. Identify separate atoms even when they appear in the same file or diff hunk.
-
-Group atoms only when a hard dependency makes separate commits incomplete, misleading, unbuildable, or unverifiable. Shared context is not a hard dependency. Belonging to the same feature, ticket, layer, module, or file is not sufficient reason to combine atoms.
-
-## Message-first partitioning
-
-Draft the Conventional Commit message before staging a candidate unit. Treat the message as the promise and the diff as its proof.
-
-For each candidate:
-
-1. Write the narrowest message that describes its observable result.
-2. Select only the implementation and direct supporting evidence required by that message.
-3. Apply the commit-unit audit below.
-4. Split the candidate whenever the audit reveals more than one independently meaningful result.
-5. Repeat until every candidate passes.
-
-Apply these five checks:
-
-1. **Single-center check:** Express the result as one precise imperative description. Conjunctions such as `and`, slashes, lists, or umbrella terms such as `misc`, `various`, and `cleanup` are strong signals that the candidate contains multiple centers. A conjunction is acceptable only when it describes one technically inseparable operation.
-2. **Necessity check:** Confirm that every file and hunk is necessary for the message. Move any change that the message does not explain to another unit.
-3. **Separability check:** Ask whether a reviewer could reasonably accept one subset and reject another. If yes, split them.
-4. **Revertibility check:** Ask whether one subset could be reverted while intentionally retaining another. If yes, split them.
-5. **Validity check:** Confirm that the candidate leaves the repository in a usable state and passes the validation relevant to its claim. Never create an intentionally broken intermediate commit.
-
-The message may describe an operation whose mechanical consequences span many files. For example, `refactor(api): rename createUser to registerUser` can include the declaration, all required callers, and direct tests because those edits are consequences of the single rename.
-
-## Split and grouping rules
-
-Default to separate commits for:
-
-* independently usable sub-capabilities within one larger feature
-* independent fixes in the same module, file, or hunk
-* a behavior-preserving preparatory refactoring and a later behavior change when each is valid alone
+* independently usable sub-capabilities of a larger feature
+* independent fixes, including ones inside the same file or hunk
+* a behavior-preserving refactoring and a later behavior change when each is valid alone
 * formatting or mechanical renames and unrelated semantic changes
 * independent configuration, documentation, CI, dependency, generated, or maintenance changes
-* tests that have an independent purpose and do not directly verify another changed behavior
+* tests with an independent purpose that do not directly verify a changed behavior
 
-Keep changes together only when they jointly express one semantic claim, including:
+Keep together only when separation would be incomplete, unbuildable, or misleading:
 
-* a behavior change and the focused tests or regression tests that directly verify it
-* an API or schema change and the caller, consumer, or migration updates required for the commit to remain valid
-* a dependency declaration and its corresponding lockfile update
-* handwritten source and generated artifacts that are two required representations of the same change
-* implementation and documentation that must change together to avoid an incorrect or unusable interface
+* a behavior change and the tests that directly verify it
+* an API or schema change and the caller or migration updates it requires
+* a dependency declaration and its lockfile
+* handwritten source and the generated artifacts required with it
+* implementation and documentation that must change together
 
-Put an independently valid foundational refactoring before the commits that depend on it. Order all units according to their hard dependencies.
+Commit foundations before the units that depend on them. If all changes express one claim, create one commit; do not hunt for atoms, and never create mechanical micro-commits or incomplete scaffolding.
 
-## Large-candidate review
+## Staging
 
-There is no fixed line-count or file-count limit. Size is a warning signal, not a partitioning rule.
+Treat already-staged changes as part of the change set and reorganize the index freely, but never lose working-tree content. Never use interactive commands such as `git add -p` or `git reset -p`, destructive commands such as `git reset --hard`, `git checkout -- .`, or `git clean -fd`, and never discard or overwrite user changes. Do not modify source code merely to manufacture a cleaner commit boundary.
 
-When a candidate spans many files, hunks, behaviors, or repository areas, perform a second message-first audit even if it passed once. Keep it large only when every included atom is necessary for the same claim and any further split would produce an incomplete, invalid, or misleading commit. Keep that reasoning internal.
-
-## Splitting files and hunks
-
-A file may belong to multiple commits when it contains changes serving different intents.
-
-Do not stage an entire file merely because part of it belongs to the current commit.
-
-Use precise staging techniques such as:
+Stage whole files with:
 
 ```bash
-git add -p
-git reset -p
-git restore --staged
+git add -- <path>
+git restore --staged <path>
 ```
 
-Inspect the staged diff before every commit:
+Stage selected hunks by passing a patch to `git apply --cached` on standard input; no temporary file is needed:
+
+```bash
+git apply --cached <<'EOF'
+diff --git a/<file> b/<file>
+--- a/<file>
++++ b/<file>
+@@ ... @@
+ <hunks belonging to the current unit only>
+EOF
+```
+
+Extract the hunks from `git diff` output and keep their headers and line counts exact; a patch for a new file must retain its `new file mode` line and `--- /dev/null` header. When hunks of the same file were already staged, rewrite the context lines to match the index state rather than the working tree. Undo staging mistakes with `git restore --staged <path>`.
+
+Register an untracked file that must be split with `git add -N <path>`, then split it like any modified file.
+
+Before every commit, confirm the index matches the drafted message:
 
 ```bash
 git diff --cached
 git diff --cached --stat
 ```
 
-If one diff hunk contains multiple unrelated changes, split or edit the patch when it can be done safely.
+## Commit checklist
 
-Do not modify source code solely to manufacture a cleaner commit boundary unless the modification is itself necessary and behavior-preserving.
+Apply once per unit to the complete staged diff; re-check units spanning many files or areas especially carefully.
 
-Never use destructive commands such as:
-
-```bash
-git reset --hard
-git checkout -- .
-git clean -fd
-```
-
-Do not discard or overwrite user changes.
-
-## Existing staged changes
-
-Treat existing staged changes as part of the complete uncommitted change set.
-
-Do not assume that the current staging boundary is correct.
-
-You may reorganize the index when necessary, provided that:
-
-* no working-tree content is discarded
-* no user change is lost
-* only the staging state is altered
-* the final commits follow logical boundaries
-
-Use non-destructive index operations only.
-
-## Untracked files
-
-Inspect untracked files before deciding whether they belong in a commit.
-
-Do not automatically commit:
-
-* environment files
-* editor state
-* caches
-* temporary files
-* logs
-* build outputs
-* local databases
-* credentials
-* machine-specific configuration
-
-Check whether an untracked file should instead be added to `.gitignore`.
-
-Do not modify `.gitignore` unless that modification is clearly part of the intended repository change.
-
-## Sensitive and suspicious content
-
-Before committing, check for content that appears to contain:
-
-* passwords
-* API keys
-* access tokens
-* private keys
-* credentials
-* personal data
-* local environment configuration
-* accidentally generated large files
-
-If sensitive content may be present, stop before committing it and clearly identify the blocker.
-
-Do not expose the suspected secret value in the response.
-
-Also stop when:
-
-* the purpose of a significant change cannot be inferred
-* the changes appear incomplete or corrupted
-* an unresolved merge, rebase, cherry-pick, or bisect is active
-* the repository is in an unsafe Git state
-* reliable splitting would require guessing the user's intent
-* committing would include obviously accidental files
-
-## Conventional Commits
-
-Use this format:
-
-```text
-<type>(<scope>): <description>
-```
-
-The scope is optional:
-
-```text
-<type>: <description>
-```
-
-Supported types include:
-
-* `feat`: introduce user-visible functionality
-* `fix`: correct defective behavior
-* `refactor`: restructure code without intentionally changing behavior
-* `perf`: improve performance
-* `test`: add or revise tests without changing production behavior
-* `docs`: change documentation
-* `style`: make non-semantic formatting or style changes
-* `build`: change dependencies or build tooling
-* `ci`: change continuous-integration configuration
-* `chore`: perform repository maintenance not covered by another type
-* `revert`: revert a previous commit
-
-Choose the type according to the primary intent of the commit, not merely the files modified.
-
-Use a scope only when it identifies a stable and meaningful repository component.
-
-Descriptions must:
-
-* state what the commit accomplishes
-* be concise and specific
-* use imperative wording
-* avoid a trailing period
-* avoid vague descriptions
-
-Avoid messages such as:
-
-```text
-update code
-fix stuff
-misc changes
-make changes
-code cleanup
-```
-
-Prefer messages such as:
-
-```text
-feat(auth): add refresh token rotation
-fix(parser): reject unterminated string literals
-refactor(storage): extract transaction retry policy
-test(api): cover duplicate request handling
-build(deps): upgrade grpc dependencies
-```
-
-For breaking changes, follow the repository's established Conventional Commit convention. When no convention exists, use `!` and an explanatory commit body:
-
-```text
-feat(api)!: replace legacy pagination parameters
-```
+1. The message describes one result, with no umbrella terms such as `misc`, `various`, or `cleanup`.
+2. Every staged hunk is explained by the message.
+3. Everything needed to complete and verify the claim is staged.
+4. No secrets, debug leftovers, generated noise, or accidental files are staged.
+5. The repository remains usable; never create intentionally broken intermediate commits. Two atoms that pass validation only together are one unit.
 
 ## Validation
 
-Before each commit:
+Run the smallest relevant validation available for the current claim: formatting checks, linting, compilation, type checking, targeted tests, or repository-provided commands.
 
-1. Reapply all five commit-unit checks to the complete staged diff.
-2. Confirm that the staged diff contains only the claim made by the drafted message.
-3. Confirm that all files necessary to implement and verify that claim are included.
-4. Check for accidental debug code, generated noise, or sensitive data.
-5. Run the smallest relevant validation available.
+Validation runs against the working tree, which still contains the atoms reserved for later commits, so ignore failures caused only by those uncommitted atoms. When strict isolation is genuinely required, verify the new commit in a throwaway worktree created with `git worktree add`, and remove it afterwards.
 
-Relevant validation may include:
+Run broader validation after all commits when practical. If validation fails because of the current unit's changes, correct it only when the correction clearly belongs to the unit's claim; otherwise stop and report the blocker.
 
-* formatting checks
-* static analysis
-* compilation
-* type checking
-* unit tests
-* targeted integration tests
-* repository-provided verification commands
+## Committing
 
-Prefer targeted validation for the current commit over repeatedly running an unnecessarily expensive full test suite.
+Use Conventional Commits:
 
-Run broader validation after all commits when practical.
+```text
+<type>(<scope>): <subject>
+```
 
-Require each commit to remain buildable and to pass the checks relevant to its claim. If two atoms can pass only when applied together, treat that as evidence of a hard dependency and keep them in one unit. Do not trade a valid history for a larger number of commits.
+The scope is optional and names a stable repository component. Types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `revert`; choose by intent, not by files touched. Mark breaking changes with `!` and a `BREAKING CHANGE:` footer. Subjects are imperative, specific, at most 50 characters, and without a trailing period; body lines are at most 72 characters. Repository conventions override these defaults.
 
-If validation fails because of the changes being committed, fix the issue only when the correction is clearly within the current intent.
+Create a commit with `git commit -m "<message>"` for a subject-only message, or with a heredoc when a body or footer is present:
 
-If the failure is unrelated, pre-existing, or cannot be safely resolved, stop and report the blocker instead of creating a misleading commit.
+```bash
+git commit -F - <<'EOF'
+feat(api)!: replace legacy pagination parameters
 
-## Commit execution
+The offset parameters are replaced by a cursor-based page token.
 
-For every logical commit unit:
+BREAKING CHANGE: offset and limit are removed.
+EOF
+```
 
-1. Start from the candidate's drafted Conventional Commit message.
-2. Stage only the files and hunks required by that message.
-3. Inspect and audit the complete staged diff against the message.
-4. Run relevant validation.
-5. Finalize the message without widening it to accommodate unrelated changes.
-6. Create the commit.
-7. Verify that the commit was successfully created.
-8. Continue with the remaining uncommitted changes.
+Never create an empty commit; do not use `--allow-empty`.
 
-Do not:
+Respect repository hooks. If a hook modifies files, fold those modifications into the current unit. If a hook rejects the commit, fix the problem within the same unit and commit again; never bypass hooks with `--no-verify`.
 
-* push commits
-* amend existing commits
-* rebase history
-* squash existing commits
-* modify remote branches
-* create or switch branches
-* change Git configuration
-* bypass hooks with `--no-verify`
-* sign commits unless signing is already configured and occurs normally
+Do not: push, amend, rebase, squash, modify remote branches, create or switch branches, change Git configuration, or sign commits manually.
 
-Respect repository hooks.
+## Untracked files
 
-If a hook modifies files, inspect those modifications and determine whether they belong in the current commit before proceeding.
+Do not automatically commit environment files, editor state, caches, temporary files, logs, build outputs, local databases, credentials, or machine-specific configuration. Consider whether such a file belongs in `.gitignore` instead, and do not edit `.gitignore` unless that edit is clearly part of the intended change.
 
-## Completion checks
+## Stop conditions
 
-After creating the commits:
+Stop and report the blocker clearly, never exposing suspected secret values:
+
+* the diff appears to contain passwords, keys, tokens, personal data, or unexpectedly large files
+* a merge, rebase, cherry-pick, or bisect is unresolved, or the repository state is otherwise unsafe
+* the intent of a significant change cannot be inferred, or the changes look incomplete or corrupted
+* committing would include obviously accidental files
+
+## Completion and response
 
 ```bash
 git status --short
-git log --format="%H %s" -n <number-of-new-commits>
+git log --abbrev=12 --format="%h %s" -n <number-of-new-commits>
 ```
 
-Confirm that:
+Confirm that every intended change was committed, nothing unintended was committed, and any remaining files are intentionally left out.
 
-* every intended change was committed
-* no unintended change was committed
-* remaining uncommitted files, if any, are intentionally excluded
-* the reported commits are exactly the commits created during this run
-
-## Final response
-
-When all commits are successfully created, output only the newly created commit hash and commit message.
-
-Use one commit per line, ordered from oldest to newest:
-
-```text
-<commit-hash> <commit-message>
-```
-
-Example:
+Respond with one line per new commit, oldest first, and nothing else:
 
 ```text
 71f9e17b8a32 feat(auth): add refresh token rotation
 d84ca29f013e test(auth): cover expired refresh tokens
 ```
 
-Use a 12-character abbreviated commit hash unless the user explicitly requests the full hash.
+If there was nothing to commit, respond with `No changes to commit`. If blocked, briefly state the blocker and the action required.
 
-Do not include:
+## Worked example
 
-* headings
-* explanations
-* commit-plan details
-* file lists
-* diff summaries
-* validation results
-* bullet points
-* closing remarks
+Uncommitted changes:
 
-If no commit was created because there were no uncommitted changes, respond with:
+* `src/auth.py`: one hunk fixes expired refresh-token handling, a separate hunk renames `session_cache` to `token_cache`
+* `tests/test_auth.py`: a new test reproducing the expired-token bug
+* `package.json` and `package-lock.json`: a gRPC dependency upgrade
+* `scratch-notes.txt`: an untracked personal note file
+
+The two `src/auth.py` hunks are separate atoms despite sharing a file; the fix and its regression test form one unit; the dependency files form one unit; the note file is neither committed nor deleted. The rename is committed first:
 
 ```text
-No changes to commit
+a1b2c3d4e5f6 refactor(auth): rename session_cache to token_cache
+b7c8d9e0f1a2 fix(auth): reject expired refresh tokens
+c3d4e5f6a7b8 build(deps): upgrade grpc dependencies
 ```
-
-If execution is blocked, do not pretend that the operation succeeded. Briefly state the blocking condition and the action required to resolve it.
