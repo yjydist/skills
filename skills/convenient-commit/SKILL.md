@@ -2,7 +2,6 @@
 name: convenient-commit
 description: Analyze all uncommitted Git changes, divide them into the smallest meaningful and independently reviewable, verifiable, and revertible units, and create separate commits following Conventional Commits. Use when the user asks to organize, split, or commit mixed repository changes.
 allowed-tools: Bash
-context: fork
 disable-model-invocation: true
 ---
 
