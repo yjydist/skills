@@ -1,184 +1,103 @@
 ---
 name: convenient-commit
-description: Analyze all uncommitted Git changes, divide them into the smallest meaningful and independently reviewable, verifiable, and revertible units, and create separate commits following Conventional Commits. Use when the user asks to organize, split, or commit mixed repository changes.
-allowed-tools: Bash
-disable-model-invocation: true
+description: 按逻辑完整且便于审查的原则规划提交边界, 拟定和检查提交消息, 并在授权范围内创建 Git 提交. 适用于提交代码, 拆分提交, 整理未提交改动, 拟定提交消息或在开发任务中安排提交边界.
 ---
 
-# Convenient Commit
+# 便捷提交
 
-Split all uncommitted changes in the current repository into the smallest meaningful commit units, and commit each unit separately as a Conventional Commit.
+以最小的完整逻辑变化为提交单位, 让提交消息准确解释变化的目的与结果, 降低审查者的理解成本.
 
-A commit unit is one semantic claim: the message states the claim and the diff contains exactly the changes needed for it, so it can be reviewed, verified, and reverted independently. Keep the analysis internal and never print the commit plan.
+## 核心原则
 
-## Workflow
++ 一条提交服务于一个明确目的. 实现, 调用点, 直接验证该行为的测试及必要文档通常放在一起, 可以跨越多个文件或模块.
++ 每条提交相对于父提交都应成立. 可以依赖前面的完整变化, 不留下需要后续提交修补的已知构建, 类型或测试错误. 用户明确要求的特殊策略需说明风险.
++ 需要同步变化的接口与调用方, 依赖声明与锁文件, 源码与仓库要求提交的生成文件, 应保持一致.
++ 按行为和意图划分边界, 不按文件, 技术层次或操作顺序机械拆分, 不设置固定的行数, 文件数或提交数量指标.
++ 不混入无关的格式化, 重命名, 重构, 依赖升级或顺手修复. 只服务于当前变化的微小调整, 无需强行另建提交.
 
-1. Inspect the repository state and its commit conventions.
-2. Partition the changes into commit units.
-3. For each unit in dependency order: stage it precisely, run the commit checklist, validate it, and create the commit.
-4. Run the completion checks and report only the new commits.
+## 工作流程
 
-Do not ask the user to approve the plan unless a genuine ambiguity or safety risk prevents a reliable decision.
+### 1. 确认授权与现状
 
-## Inspection
+阅读适用的仓库说明, 贡献指南及提交和测试约定, 遵守更高优先级的指令.
+
+根据用户请求选择执行范围:
+
+| 请求 | 执行范围 | 交付结果 |
+| --- | --- | --- |
+| 仅规划拆分或审查边界 | 只读检查相关差异, 按步骤 2 分组, 不暂存或提交 | 提交顺序, 拟定标题, 分组理由及验证建议 |
+| 仅拟定或检查消息 | 只读检查用户指定的差异, 读取提交消息指南, 不暂存或提交 | 有实际差异支持的消息草案或修改建议 |
+| 提交或拆分并提交 | 在授权范围内完成后续步骤, 不为每条常规提交重复请求确认 | 实际提交记录, 验证结果及剩余改动 |
+
+用户要求开发功能但未授权提交时, 用核心原则组织修改, 不自行创建提交. 仅拟定消息时先确定描述对象是暂存区, 全部未提交改动还是指定范围; 无法从请求判断且会改变消息含义时再澄清.
+
+只读检查当前分支, 工作区, 暂存区, 未跟踪文件及近期完整提交消息. 可使用:
 
 ```bash
-git status --short
+git status --short --branch
 git diff
 git diff --cached
 git ls-files --others --exclude-standard
-git log -n 20 --format="%h %s"
+git log -10 --format='%h%n%B'
 ```
 
-Read repository instructions when present, such as `AGENTS.md`, `CLAUDE.md`, `CONTRIBUTING.md`, and `README.md`. Infer commit-message language, scope naming, capitalization, and style from recent history. If the repository has no convention, or no commits yet, use concise English.
+按任务范围选择检查命令. 仓库尚无提交时, 说明没有历史惯例可参考, 不把 `git log` 失败当作内容错误. 区分用户已有改动, 本轮改动及授权范围. 未跟踪文件需单独检查; 改动已存在不代表获得提交授权. 只阅读相关内容, 不无差别输出敏感文件. 遇到未解决冲突或正在进行的合并或变基, 不擅自继续, 终止或替用户解决.
 
-## Partitioning
+### 2. 按目的分组并拟定消息
 
-Partition by semantic outcome, not by file, module, ticket, or line count. Draft each unit's message before staging it: the message is the promise and the diff is the proof.
+理解全部相关差异, 按目的分组并按依赖排序. 处理混合改动或边界难以判断时, 读取 [提交边界指南](references/commit-boundaries.md).
 
-Split by default:
+拟定或检查消息时, 读取 [提交消息指南](references/commit-messages.md). 为每组先拟一个具体标题, 用它检验目的是否单一. 若必须罗列互不相关的结果才能描述一组, 重新检查边界.
 
-* independently usable sub-capabilities of a larger feature
-* independent fixes, including ones inside the same file or hunk
-* a behavior-preserving refactoring and a later behavior change when each is valid alone
-* formatting or mechanical renames and unrelated semantic changes
-* independent configuration, documentation, CI, dependency, generated, or maintenance changes
-* tests with an independent purpose that do not directly verify a changed behavior
+简要说明提交顺序, 每项包含拟定标题, 主要范围, 分组理由或前置依赖, 以及验证方式. 简单任务一两句话即可. 仅规划时到此结束, 不生成或暗示存在真实提交哈希; 已授权提交时继续执行. 新信息导致方案调整时简述原因.
 
-Keep together only when separation would be incomplete, unbuildable, or misleading:
+### 3. 按顺序实施或精确暂存
 
-* a behavior change and the tests that directly verify it
-* an API or schema change and the caller or migration updates it requires
-* a dependency declaration and its lockfile
-* handwritten source and the generated artifacts required with it
-* implementation and documentation that must change together
+开发与提交都已获授权时, 优先按序完成一个完整变化, 验证并提交, 再处理下一组. 对已经存在的混合差异, 按逻辑选择文件或改动块; 同一文件可以分属多条提交, 但每次选中的内容必须形成有效的中间状态.
 
-Commit foundations before the units that depend on them. If all changes express one claim, create one commit; do not hunt for atoms, and never create mechanical micro-commits or incomplete scaffolding.
++ 整个文件属于当前提交时, 使用明确路径的 `git add -- <路径>`; 需要按改动块暂存且工具支持交互时, 使用 `git add -p -- <路径>`.
++ 非交互环境下需要按改动块暂存时, 读取 [提交边界指南](references/commit-boundaries.md#非交互环境下按改动块暂存), 先检查补丁再应用到暂存区.
++ 不盲目使用 `git add .`, `git add -A` 或 `git commit -a`.
++ 若拆分需要大量人为拼接, 反复恢复文件或留下脆弱中间态, 重新检查边界.
 
-## Staging
+**普通 `git commit` 会包含全部暂存内容.** 已有暂存内容超出授权范围时, 必须安全隔离并保留用户原有内容和暂存选择. 无法安全隔离时报告具体阻塞, 不擅自清空, 取消暂存或带入提交.
 
-Treat already-staged changes as part of the change set and reorganize the index freely, but never lose working-tree content. Never use interactive commands such as `git add -p` or `git reset -p`, destructive commands such as `git reset --hard`, `git checkout -- .`, or `git clean -fd`, and never discard or overwrite user changes. Do not modify source code merely to manufacture a cleaner commit boundary.
+### 4. 验证快照并校准消息
 
-Stage whole files with:
+检查完整暂存差异:
 
 ```bash
-git add -- <path>
-git restore --staged <path>
-```
-
-Stage selected hunks by passing a patch to `git apply --cached` on standard input; no temporary file is needed:
-
-```bash
-git apply --cached <<'EOF'
-diff --git a/<file> b/<file>
---- a/<file>
-+++ b/<file>
-@@ ... @@
- <hunks belonging to the current unit only>
-EOF
-```
-
-Extract the hunks from `git diff` output and keep their headers and line counts exact; a patch for a new file must retain its `new file mode` line and `--- /dev/null` header. When hunks of the same file were already staged, rewrite the context lines to match the index state rather than the working tree. Undo staging mistakes with `git restore --staged <path>`.
-
-Register an untracked file that must be split with `git add -N <path>`, then split it like any modified file.
-
-Before every commit, confirm the index matches the drafted message:
-
-```bash
-git diff --cached
 git diff --cached --stat
+git diff --cached --check
+git diff --cached
 ```
 
-## Commit checklist
+确认所有改动都服务于当前目的, 配套更新完整, 没有无关内容, 凭据或临时文件. 按 [消息检查](references/commit-messages.md#消息检查) 校准标题和正文; 范围不符时调整消息或提交边界. 无待提交改动时直接说明, 不创建空提交.
 
-Apply once per unit to the complete staged diff; re-check units spanning many files or areas especially carefully.
+按仓库约定运行与当前变化相关的测试, 构建, 类型检查或静态检查, 必要时扩大范围.
 
-1. The message describes one result, with no umbrella terms such as `misc`, `various`, or `cleanup`.
-2. Every staged hunk is explained by the message.
-3. Everything needed to complete and verify the claim is staged.
-4. No secrets, debug leftovers, generated noise, or accidental files are staged.
-5. The repository remains usable; never create intentionally broken intermediate commits. Two atoms that pass validation only together are one unit.
+**验证对象必须对应本次将提交的快照.** 工作区包含后续提交的代码时, 仅测试整个工作区不能证明当前暂存快照成立. 应按序实现和验证, 或在不影响原工作区的隔离目录中重建并验证待提交快照. 不用破坏性操作或擅自 `stash` 用户改动来腾空工作区. 每条提交都需核对必要验证, 不能用最终状态的通过替代中间提交的验证.
 
-## Validation
+无法运行检查时记录未验证项和原因. 存在基线失败时, 依据对比证据区分已有问题和本次引入的问题. 无法获得必要验证时披露风险; 用户未授权带风险提交的, 不视为已满足提交条件.
 
-Run the smallest relevant validation available for the current claim: formatting checks, linting, compilation, type checking, targeted tests, or repository-provided commands.
+### 5. 提交并核对结果
 
-Validation runs against the working tree, which still contains the atoms reserved for later commits, so ignore failures caused only by those uncommitted atoms. When strict isolation is genuinely required, verify the new commit in a throwaway worktree created with `git worktree add`, and remove it afterwards.
+按消息指南写入已核对的消息. 如果钩子修改了文件或提交失败, 重新检查差异和验证结果. 仅将属于当前目的且在授权范围内的修正纳入重试, 不盲目暂存钩子产生的全部改动. 无法在当前范围内修复时报告阻塞, 不绕过失败或把失败尝试报告为已提交.
 
-Run broader validation after all commits when practical. If validation fails because of the current unit's changes, correct it only when the correction clearly belongs to the unit's claim; otherwise stop and report the blocker.
-
-## Committing
-
-Use Conventional Commits:
-
-```text
-<type>(<scope>): <subject>
-```
-
-The scope is optional and names a stable repository component. Types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style`, `build`, `ci`, `chore`, `revert`; choose by intent, not by files touched. Mark breaking changes with `!` and a `BREAKING CHANGE:` footer. Subjects are imperative, specific, at most 50 characters, and without a trailing period; body lines are at most 72 characters. Repository conventions override these defaults.
-
-Create a commit with `git commit -m "<message>"` for a subject-only message, or with a heredoc when a body or footer is present:
+提交后核对完整消息, 实际改动及剩余工作区状态:
 
 ```bash
-git commit -F - <<'EOF'
-feat(api)!: replace legacy pagination parameters
-
-The offset parameters are replaced by a cursor-based page token.
-
-BREAKING CHANGE: offset and limit are removed.
-EOF
-```
-
-Never create an empty commit; do not use `--allow-empty`.
-
-Respect repository hooks. If a hook modifies files, fold those modifications into the current unit. If a hook rejects the commit, fix the problem within the same unit and commit again; never bypass hooks with `--no-verify`.
-
-Do not: push, amend, rebase, squash, modify remote branches, create or switch branches, change Git configuration, or sign commits manually.
-
-## Untracked files
-
-Do not automatically commit environment files, editor state, caches, temporary files, logs, build outputs, local databases, credentials, or machine-specific configuration. Consider whether such a file belongs in `.gitignore` instead, and do not edit `.gitignore` unless that edit is clearly part of the intended change.
-
-## Stop conditions
-
-Stop and report the blocker clearly, never exposing suspected secret values:
-
-* the diff appears to contain passwords, keys, tokens, personal data, or unexpectedly large files
-* a merge, rebase, cherry-pick, or bisect is unresolved, or the repository state is otherwise unsafe
-* the intent of a significant change cannot be inferred, or the changes look incomplete or corrupted
-* committing would include obviously accidental files
-
-## Completion and response
-
-```bash
+git log -1 --format='%h%n%B'
+git show --format= --stat --patch HEAD
 git status --short
-git log --abbrev=12 --format="%h %s" -n <number-of-new-commits>
 ```
 
-Confirm that every intended change was committed, nothing unintended was committed, and any remaining files are intentionally left out.
+按提交顺序报告实际完成的短哈希, 标题, 各自目的和验证结果, 并说明未执行的检查, 剩余改动及阻塞.
 
-Respond with one line per new commit, oldest first, and nothing else:
+## 操作边界
 
-```text
-71f9e17b8a32 feat(auth): add refresh token rotation
-d84ca29f013e test(auth): cover expired refresh tokens
-```
-
-If there was nothing to commit, respond with `No changes to commit`. If blocked, briefly state the blocker and the action required.
-
-## Worked example
-
-Uncommitted changes:
-
-* `src/auth.py`: one hunk fixes expired refresh-token handling, a separate hunk renames `session_cache` to `token_cache`
-* `tests/test_auth.py`: a new test reproducing the expired-token bug
-* `package.json` and `package-lock.json`: a gRPC dependency upgrade
-* `scratch-notes.txt`: an untracked personal note file
-
-The two `src/auth.py` hunks are separate atoms despite sharing a file; the fix and its regression test form one unit; the dependency files form one unit; the note file is neither committed nor deleted. The rename is committed first:
-
-```text
-a1b2c3d4e5f6 refactor(auth): rename session_cache to token_cache
-b7c8d9e0f1a2 fix(auth): reject expired refresh tokens
-c3d4e5f6a7b8 build(deps): upgrade grpc dependencies
-```
++ 默认只创建新的本地提交. 创建提交不代表获得推送权限.
++ 未经明确授权, 不执行 `amend`, `rebase`, `squash`, 历史重写或强制推送. 已提交历史的拆分需要单独授权.
++ 不擅自 `stash`, 丢弃或覆盖用户改动, 不使用 `git reset --hard`, `git clean` 等破坏性操作整理提交.
++ 不自动改变 Git 身份, 签名, 钩子或仓库配置, 不使用 `--no-verify` 绕过检查.
++ 不提交私钥, 访问令牌或其他凭据. 无关问题保留原状, 仅在必要时说明.
