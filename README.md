@@ -11,3 +11,4 @@
 ## skills 列表
 
 + convenient-commit: 按逻辑完整性规划提交边界, 拟定提交消息, 并在授权范围内创建 Git 提交. [具体文档](docs/convenient-commit.md)
++ to-github-issue: 收集 session 中的待办和想法, 归纳为带标签的 GitHub issue 草稿, 确认后创建, 必要时拆分 sub-issue. [具体文档](docs/to-github-issue.md)
