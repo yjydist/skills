@@ -13,4 +13,4 @@
 + convenient-commit: 按逻辑完整性规划提交边界, 拟定提交消息, 并在授权范围内创建 Git 提交. [具体文档](docs/convenient-commit.md)
 + to-github-issue: 收集 session 中的待办和想法, 归纳为带标签的 GitHub issue 草稿, 确认后创建, 必要时拆分 sub-issue. [具体文档](docs/to-github-issue.md)
 + swiss-grid-design: 用瑞士国际主义的网格, 字体与留白创建, 调整或评审多媒介视觉方案, 明确默认参数和功能例外. [具体文档](docs/swiss-grid-design.md)
-+ weekly-report: 将用户提供的学期, 周次与本周进展条目填入 Typst 模板, 渲染为 PNG 周报图片. [具体文档](docs/weekly-report.md)
++ weekly-report: 将用户提供的学期, 周次与本周进展条目填入 Typst 模板, 渲染为 PNG 周报图片与 Typst 源文件. [具体文档](docs/weekly-report.md)
