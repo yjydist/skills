@@ -45,3 +45,5 @@ dist/
 *.log
 .tmp/
 tmp/
+
+.claude/plans
