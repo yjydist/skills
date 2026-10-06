@@ -40,4 +40,5 @@
 
 + [执行流程](../skills/paper-first-pass/SKILL.md): 内容获取, 阅读优先级, 必答问题与操作边界.
 + [报告模板](../skills/paper-first-pass/references/report-format.md): 12 节完整结构与措辞要求.
++ [下游 skill](paper-second-pass.md): 已决定精读后的第二遍理解阅读.
 + [返回仓库说明](../README.md).
