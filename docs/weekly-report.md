@@ -1,11 +1,11 @@
 # weekly-report 使用文档
 
-`weekly-report` 将用户提供的学期, 周次和本周进展条目填入 Typst 模板, 渲染为一张 SVG 周报矢量图和对应的 Typst 源文件. 版式固定为标题, 分割线和一个"本周进展"列表, 内容全部来自用户输入, 不代为归纳或编造.
+`weekly-report` 将用户提供的学期, 周次和本周进展条目填入 Typst 模板, 渲染为一张 A4 尺寸 300 DPI 的 PNG 周报图和对应的 Typst 源文件. 版式固定为标题, 分割线和一个"本周进展"列表, 内容全部来自用户输入, 不代为归纳或编造.
 
 ## 使用前提
 
 + 将 [skill 目录](../skills/weekly-report/SKILL.md) 连同 [Typst 模板](../skills/weekly-report/template.typ) 一起提供给支持 skill 的工具, 保持两者的相对路径.
-+ 执行工具能够运行 typst 0.13 或更高版本, 且系统已安装 Alimama FangYuanTi VF 字体.
++ 执行工具能够运行 typst 0.13 或更高版本, 且系统已安装 Alimama FangYuanTi VF 字体; 产物为 A4 尺寸 300 DPI 的 PNG 图.
 + 在请求中直接给出学期, 周次和进展条目; skill 不会替用户归纳内容.
 
 下方示例使用 `$weekly-report` 表示调用该 skill. 如果所用工具不支持这种调用形式, 可以直接指定 `skills/weekly-report/SKILL.md` 的实际路径, 要求按其中的指导处理.
@@ -21,7 +21,7 @@
 - 输出接口文档初稿
 ```
 
-预期结果是在当前目录生成 `weekly-report-2026春-第3周.svg` 和配套的 `weekly-report-2026春-第3周.typ` 源文件, 矢量格式, 任意分辨率下清晰, 内容为标题, 分割线和上述进展条目, 条目原样呈现不做改写.
+预期结果是在当前目录生成 `weekly-report-2026春-第3周.png` 和配套的 `weekly-report-2026春-第3周.typ` 源文件, A4 尺寸 300 DPI 渲染, 打印与缩放清晰, 内容为标题, 分割线和上述进展条目, 条目原样呈现不做改写.
 
 ### 缺少周次时追问
 
