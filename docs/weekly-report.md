@@ -1,46 +1,53 @@
 # weekly-report 使用文档
 
-`weekly-report` 将用户提供的学期, 周次和本周进展条目填入 Typst 模板, 渲染为一张 A4 尺寸 300 DPI 的 PNG 周报图和对应的 Typst 源文件. 版式固定为标题, 分割线和一个"本周进展"列表, 内容全部来自用户输入, 不代为归纳或编造.
+`weekly-report` 将用户提供的学期, 周次与进展条目渲染为 A4 尺寸 300 DPI 的 PNG 图片和独立 Typst 源文件. 保留原文和版式, 超页时自动生成多张图片, 不代为归纳或编造进展.
 
 ## 使用前提
 
-+ 将 [skill 目录](../skills/weekly-report/SKILL.md) 连同 [Typst 模板](../skills/weekly-report/template.typ) 一起提供给支持 skill 的工具, 保持两者的相对路径.
-+ 执行工具能够运行 typst 0.13 或更高版本, 且系统已安装 Alimama FangYuanTi VF 字体; 产物为 A4 尺寸 300 DPI 的 PNG 图.
-+ 在请求中直接给出学期, 周次和进展条目; skill 不会替用户归纳内容.
++ 将 [skill 目录](../skills/weekly-report/SKILL.md) 连同模板和 `scripts/` 一起提供给执行工具, 保持相对路径.
++ 需要 Python 3.9+, Typst 0.13+ 和字体族 `Alimama FangYuanTi`. 渲染脚本只依赖 Python 标准库.
++ 提供学期, 周次及非空进展条目. 年份省略时按用户当前年份补齐, 并在交付时说明.
 
-下方示例使用 `$weekly-report` 表示调用该 skill. 如果所用工具不支持这种调用形式, 可以直接指定 `skills/weekly-report/SKILL.md` 的实际路径, 要求按其中的指导处理.
+下方用 `$weekly-report` 表示调用. 工具不支持这种形式时, 指定本 skill 的 `SKILL.md` 实际路径.
 
 ## 调用示例
-
-### 提供完整内容
 
 ```text
 使用 $weekly-report 生成周报: 2026 年春季学期第 3 周.
 本周进展:
-- 完成模块 A 的联调, 修复 3 个缺陷
-- 输出接口文档初稿
++ 修复 #issue 并验证 $HOME 环境变量
++ 完成接口文档初稿
 ```
 
-预期结果是在当前目录生成 `weekly-report-2026春-第3周.png` 和配套的 `weekly-report-2026春-第3周.typ` 源文件, A4 尺寸 300 DPI 渲染, 打印与缩放清晰, 内容为标题, 分割线和上述进展条目, 条目原样呈现不做改写.
-
-### 缺少周次时追问
+上述特殊字符作为普通文字呈现. 单页产物为 `weekly-report-2026春-第3周.png` 和同名 `.typ`. 需要多页时, 图片改为 `weekly-report-2026春-第3周-第1页.png`, `...-第2页.png` 等, 源文件仍只有一个.
 
 ```text
-使用 $weekly-report 生成 2026 年春季学期的周报, 进展条目如下:
-- 完成数据清洗脚本
+使用 $weekly-report 生成秋季学期周报, 进展如下:
++ 完成数据清洗脚本
 ```
 
-预期结果是 skill 先追问这是第几周, 补齐周次后才渲染, 不会猜测周次或自行编造进展.
+此例会追问周次, 年份默认采用当前年份. 长条目和大量条目自动分页, 不自动缩字或改写.
 
-## 异常处理
+## 直接运行脚本
 
-+ typst 未安装或不在 PATH 中时, 报告缺失并停止, 不会尝试安装.
-+ 系统缺少 Alimama FangYuanTi VF 字体时, 报告缺失并停止, 不替换为其他字体.
-+ 年份, 学期, 周次或进展条目缺失时, 先追问补齐, 不猜测内容; 年份未提供时默认使用当前年份并明确说明.
-+ typst 编译失败时, 展示完整错误输出并说明原因, 不静默重试.
+输入 JSON 包含 `year`, `semester`, `week`, `items` 四个字段. 具体约束和示例见 [执行流程](../skills/weekly-report/SKILL.md). 保存 JSON 后运行:
+
+```bash
+python3 skills/weekly-report/scripts/render.py --input input.json --output-dir output
+```
+
+也可用 `--input -` 从标准输入读取 JSON. 成功时输出包含 `pages` 和 `files` 的 JSON, 分别表示页数与全部产物的绝对路径. `.typ` 源文件包含完整数据, 可独立编译, 不需要保留输入 JSON.
+
+## 异常处理与检查
+
++ 缺少 Typst, 版本低于 0.13 或缺少目标字体时停止, 不自动安装或替换.
++ 无效输入或编译失败时返回非零退出码, 显示原因, 不交付部分图片.
++ 同名源文件或同前缀的单页, 多页图片已存在时停止, 不覆盖. 可指定新输出目录后重试.
++ 每张图片均为 2480 x 3508 像素. 交付前检查所有页面的字形, 条目内容与分页, 最终只交付 PNG 和 Typst 文件.
 
 ## 进一步阅读
 
-+ [执行流程](../skills/weekly-report/SKILL.md): 环境确认, 内容收集, 模板填充与渲染.
-+ [Typst 模板](../skills/weekly-report/template.typ): 页面尺寸, 字体与版式.
++ [执行流程](../skills/weekly-report/SKILL.md).
++ [Typst 模板](../skills/weekly-report/template.typ).
++ [渲染脚本](../skills/weekly-report/scripts/render.py).
 + [返回仓库说明](../README.md).
