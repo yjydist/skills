@@ -45,6 +45,22 @@ python3 skills/weekly-report/scripts/render.py --input input.json --output-dir o
 + 同名源文件或同前缀的单页, 多页图片已存在时停止, 不覆盖. 可指定新输出目录后重试.
 + 每张图片均为 2480 x 3508 像素. 交付前检查所有页面的字形, 条目内容与分页, 最终只交付 PNG 和 Typst 文件.
 
+## 可选的手动验证
+
+维护周报脚本时, 可在完整仓库的根目录运行 [周报测试](../tests/test_weekly_report.py). 基础测试只需要 Python 3.9+ 标准库, 覆盖无效输入, 产物冲突, 编译失败及环境检查:
+
+```bash
+python3 -m unittest discover -s tests -p test_weekly_report.py -v
+```
+
+默认跳过两项真实渲染测试. 安装 Typst 0.13+ 和 `Alimama FangYuanTi` 字体后, 在支持此环境变量语法的 shell 中运行:
+
+```bash
+RUN_TYPST_TESTS=1 python3 -m unittest discover -s tests -p test_weekly_report.py -v
+```
+
+真实测试覆盖特殊字符和换行的原文保留, 独立源文件编译, 单页与多页交付. 版式和中文显示还需要查看生成的图片进行验收.
+
 ## 进一步阅读
 
 + [执行流程](../skills/weekly-report/SKILL.md).
