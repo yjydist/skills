@@ -1,56 +1,57 @@
 # to-github-issue 使用文档
 
-`to-github-issue` 用于回顾当前 session 中的讨论, 把其中的待办, 问题和想法归纳成带标签的 GitHub issue 草稿, 经确认后用 gh 创建. issue 按目的分为 fix, enhancement 和 idea, 标签优先复用仓库已有约定, 过于庞大的 issue 可拆分 sub-issue.
+`to-github-issue` 将当前会话讨论过的待办, 问题和想法归纳为 GitHub issue 草稿. 用户要求创建时, 检查目标仓库, 标签和重复记录, 集中确认完整草稿后创建, 必要时建立父子关系.
 
 ## 使用前提
 
-+ 将 [skill 目录](../skills/to-github-issue/SKILL.md) 连同 `references/` 中的参考文件一起提供给支持 skill 的工具.
-+ 执行工具能够运行 `gh` 且已完成认证, 对目标仓库有创建 issue 的权限. 仓库通过当前 git 仓库的 remote 自动检测, 无 remote 时需要提供仓库 slug.
-+ 在请求中说明范围: 只要草稿, 还是确认后创建; 是否包含对代码中 TODO/FIXME 的扫描(默认不扫描).
++ 将 [skill 目录](../skills/to-github-issue/SKILL.md) 连同 `references/` 一起提供给执行工具.
++ 仅整理草稿不需要 Git 仓库, gh 或认证. 没有仓库信息时, 标签和目标仓库标为待确定.
++ 实际创建需要 gh, 对目标主机完成认证, 并具备计划操作的权限. 创建 issue, 应用标签, 新建标签和挂接子 issue 分别检查权限.
++ 用户指定的目标仓库优先, 否则从当前仓库的 origin 获取. 没有可确定目标时才询问. 仅给 `OWNER/REPO` 时默认主机为 `github.com`.
 
-下方示例使用 `$to-github-issue` 表示调用该 skill. 如果所用工具不支持这种调用形式, 可以直接指定 `skills/to-github-issue/SKILL.md` 的实际路径, 要求按其中的指导处理.
+下方用 `$to-github-issue` 表示调用; 不支持该形式时, 直接指定其 `SKILL.md` 实际路径.
 
 ## 调用示例
 
-### 仅归纳草稿
+### 仅整理草稿
 
 ```text
-使用 $to-github-issue 回顾本次会话, 把遗留的待办和问题整理成 issue 草稿.
-本次只输出草稿清单, 不创建任何 issue 或标签.
+使用 $to-github-issue 回顾本次会话, 把遗留的待办整理成 issue 草稿.
+只输出草稿, 不创建任何 issue 或标签.
 ```
 
-预期结果是一份草稿清单, 每条包含类型, 标题, 正文要点, 拟用标签和是否拆分 sub-issue. 不会执行任何写操作, session 中没有可归纳内容时会直接说明.
+直接得到标题, 正文, 拟用标签, 拆分关系和待确认信息. 不要求先登录或确认原始清单; 没有真实待办时如实说明.
 
-### 整理会话待办并创建
+### 创建到指定仓库
 
 ```text
-使用 $to-github-issue 整理本次会话中的修复项和改进项, 展示草稿后创建到当前仓库.
-标签优先复用仓库已有的, 需要新建标签时先告诉我.
+使用 $to-github-issue 整理本次讨论的修复项, 准备创建到 OWNER/REPO.
+展示完整草稿后创建, 标签优先使用仓库已有的.
 ```
 
-预期结果是在当前仓库创建确认过的 issue, 并汇报每个 issue 的编号, URL 和实际标签. 创建前会先查重, 发现相似 issue 时暂停等用户决定.
+先读取目标仓库的模板和全部标签, 检索开放和关闭的相似 issue, 将新标签, 权限限制与重复条目一起展示. 用户批准具体草稿后创建, 同一版本不重复确认. 所有操作及最终核对固定使用该目标仓库.
 
-### 拆分 sub-issue
+### 拆分子 issue
 
 ```text
-使用 $to-github-issue 把本次讨论中的 X 方向整理成 issue.
-这个方向包含多个独立工作项, 拆成父 issue 加 sub-issue 的形式.
+使用 $to-github-issue 把本次讨论中的 X 方向整理成父 issue 和子 issue.
+子项需要能够独立执行和验收, 先展示完整草稿.
 ```
 
-预期结果是一个描述总体目标的父 issue, 以及逐项挂接到父 issue 的 sub-issue. 拆分依据是工作项能否独立执行和验收, 不满足拆分标准时会保持单条 issue 用任务清单表达.
+先检查 gh 是否支持 `--parent`; 支持时直接创建关联, 否则使用普通创建加 API 挂接. 创建前仍需确认具体父子关系, 完成后核对实际关联.
 
 ## 异常处理
 
-+ 草稿未经确认前不会创建任何 issue 或标签, 新建标签必须在草稿展示阶段明示并获得同意.
-+ 当前目录不是 git 仓库或没有 remote 时, 会询问目标仓库 slug 并验证; 提供不了则终止, 不猜测仓库.
-+ `gh` 未认证时展示报错并引导用户自行登录, 权限不足时提前告知, 不继续写步骤.
-+ 创建返回 403 或 422 时报告错误并终止, 不降级到其他写操作; 标签创建失败但 issue 可创建时, 征得同意后才不带标签创建.
-+ 查重发现高度相似的已有 issue 时暂停, 展示链接, 由用户决定.
-+ 不会修改, 关闭, 重开或评论已有 issue, 也不会设置 assignee, milestone 或 project.
++ 仓库归档, 未启用 Issues, 认证或访问失败时停止创建并保留草稿.
++ 标签或关联权限不足时, 在确认前提出实际可行方案, 不静默省略标签或关系.
++ 草稿确认前不写入 GitHub, 已确认内容发生实质变化时只重新确认变化部分.
++ 创建或挂接失败时报告已完成的 issue 和失败项. 已创建但未挂接的子 issue 保留原状, 不改写父正文或自动删除.
++ 网络中断或非零退出码不代表一定没有创建成功. 先只读核对, 不盲目重复创建.
++ 不自动修改, 关闭或评论已有 issue, 不设置 assignee, milestone 或 project, 不改动已有标签.
 
 ## 进一步阅读
 
-+ [执行流程](../skills/to-github-issue/SKILL.md): 环境确认, 信息收集, 归纳, 确认与创建.
-+ [issue 撰写指南](../skills/to-github-issue/references/issue-drafting.md): 信息来源, 类型判定, 标题与正文模板, sub-issue 拆分判定.
-+ [标签与 sub-issue 指南](../skills/to-github-issue/references/labels-and-sub-issues.md): 标签匹配与新建, sub-issue 命令与异常处理.
++ [执行流程](../skills/to-github-issue/SKILL.md).
++ [issue 撰写指南](../skills/to-github-issue/references/issue-drafting.md).
++ [标签, 权限与子 issue 指南](../skills/to-github-issue/references/labels-and-sub-issues.md).
 + [返回仓库说明](../README.md).

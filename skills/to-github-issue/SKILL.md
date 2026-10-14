@@ -1,86 +1,71 @@
 ---
 name: to-github-issue
-description: 收集当前 session 中讨论到的待办, 问题和想法, 归纳为带合适标签的 GitHub issue 草稿, 经确认后用 gh 创建, 必要时拆分 sub-issue. 适用于用户要求把本次讨论的 todo 或想法记成 issue, 或要求整理当前会话中遗留的修复项和改进项时.
+description: 收集当前会话讨论过的待办, 问题和想法, 归纳为 GitHub issue 草稿; 用户要求创建时, 核对目标仓库和标签并在确认草稿后用 gh 创建, 必要时拆分子 issue. 仅整理草稿不需要仓库或 gh 认证.
 ---
 
 # 会话待办转 GitHub issue
 
-回顾当前 session 中的讨论, 把其中的待办, 问题和想法归纳成 issue 草稿, 经用户确认后在目标仓库创建, 并打上贴合仓库已有约定的标签.
-
-## 核心原则
-
-+ 一条 issue 服务于一个可执行的目的. issue 必须来自本 session 中真实出现过的讨论, 不虚构需求, 不把推测当成用户的结论.
-+ 创建 issue 是对外可见的操作. 必须先展示草稿并得到确认, 确认前不执行任何写操作.
-+ 标签优先复用仓库已有的约定, 不强加自己的分类体系.
+把当前会话中的真实讨论整理成可执行的 issue. 每条对应一个明确目的, 标签优先复用目标仓库约定, 不虚构需求或把自己的推测当成用户结论.
 
 ## 工作流程
 
-### 1. 确认环境与目标仓库
+### 1. 选择模式并收集内容
 
-确认当前仓库和 gh 可用性:
++ 仅草稿: 直接整理会话, 不要求 Git 仓库, gh 或认证. 已有可靠仓库信息时可以采用, 否则将目标仓库和标签标为待确定, 不阻塞草稿交付.
++ 创建: 先整理内容并完成步骤 2 的只读检查, 再集中展示完整草稿确认. 用户已批准同一目标和同一版本草稿时沿用授权, 不重复确认; 实质调整的部分才需重新确认.
++ 请求不包含创建意图时, 默认只交付草稿. session 中没有可归纳的内容时直接说明.
+
+从会话提取明确待办, 被延后的问题和用户认可的改进方向. 去重, 合并同一目的, 按 fix, enhancement, idea 区分问题性质. 需要正文结构或拆分依据时读取 [issue 撰写指南](references/issue-drafting.md).
+
+仅在用户要求时扫描代码中的 TODO/FIXME. 不单独要求确认原始清单, 把信息缺口和可疑推测放入草稿一起核对.
+
+### 2. 创建前的只读检查
+
+仅创建模式需要本步骤. 用户明确指定的仓库优先; 未指定时从当前仓库的 origin 获取目标. 无仓库或 remote 时询问目标, 不猜测.
 
 ```bash
-git rev-parse --show-toplevel
 git remote get-url origin
-gh auth status
-gh repo view --json nameWithOwner,viewerPermission
+gh auth status --hostname HOST
+gh repo view HOST/OWNER/REPO --json nameWithOwner,viewerPermission,hasIssuesEnabled,isArchived
 ```
 
-+ 从 remote URL 解析 owner/repo. 没有 remote 或当前不在 git 仓库时, 询问用户目标仓库的 slug 并用 `gh repo view` 验证, 不猜测.
-+ `viewerPermission` 不足以创建 issue 时, 提前告知用户, 不继续写步骤.
-+ 检查 `.github/ISSUE_TEMPLATE/`, 存在模板时按模板结构组织正文.
-
-### 2. 收集 session 信息
-
-这一步主要靠回顾当前对话, 是本 skill 与直接扫描代码的差异所在. 收集以下内容:
-
-+ 用户明确提出的待办和修复要求.
-+ 讨论过但被延后处理的 bug 和设计缺陷.
-+ 被搁置或被简化的方案, 以及方案中放弃的分支.
-+ 用户明确认可的问题或改进方向.
-
-仅在用户要求时才去 grep 代码中的 TODO/FIXME 等注释, 默认不主动扫描.
-
-收集完成后先列出原始清单, 请用户补充或剔除, 再进入归纳. session 中没有可归纳的内容时直接说明, 不虚构 issue.
-
-### 3. 归纳 issue 并匹配标签
-
-+ 去重合并同类讨论, 同一问题被多次提及只保留一条.
-+ 按目的分类: 修复缺陷归 fix, 改进现有功能归 enhancement, 对下一步的想法归 idea.
-+ 标题具体到能独立理解, 不写 "修复一些问题" 这类概括.
-+ 正文包含背景, 问题或目标, 建议方案; 信息不足的条目在正文中标注待确认, 不编造细节.
-+ issue 内容复杂或需要拆分时, 读取 [issue 撰写指南](references/issue-drafting.md).
-+ 标签匹配和新标签约定, 读取 [标签与 sub-issue 指南](references/labels-and-sub-issues.md).
-
-### 4. 展示草稿并确认
-
-以清单形式逐条展示, 每条包含: 类型, 标题, 正文要点, 标签, 是否拆分 sub-issue 及拆分方式. 计划新建的标签必须在此步明示并获得同意.
-
-草稿得到确认之前不执行任何写操作, 包括创建标签. 用户调整草稿后按调整结果继续.
-
-### 5. 创建 issue
-
-+ 顺序: 先创建确认过的新标签, 再创建无父 issue, 最后按依赖关系创建 sub-issue 并挂到父 issue.
-+ 固定使用 `--repo OWNER/REPO`, 不依赖当前工作目录.
-+ 正文较长时用 `--body-file -` 配合 heredoc 传入, 避免转义问题.
-+ 创建前用 `gh issue list --search <关键词> --repo OWNER/REPO` 查重. 发现高度相似的已有 issue 时暂停, 展示链接, 由用户决定是否继续.
-+ sub-issue 优先使用 `gh issue create --parent <父编号>`, 具体命令和备选方案见 [标签与 sub-issue 指南](references/labels-and-sub-issues.md).
-
-### 6. 核对并汇报
-
-对每个创建的 issue 执行:
++ 确定 `HOST`, `OWNER`, `REPO` 后用于后续所有仓库命令. 用户只给 `OWNER/REPO` 时默认 `github.com`; 企业实例使用实际主机. `gh repo view` 通过位置参数指定仓库, 其他仓库命令使用 `--repo HOST/OWNER/REPO`, API 使用 `--hostname HOST` 和明确的仓库路径.
++ 仓库归档或未启用 Issues 时停止创建. 认证和网络检查失败时报告原因, 可保留已整理的草稿.
++ 仅本地 checkout 确实对应目标仓库时读取其中的 `.github/ISSUE_TEMPLATE/`; 否则通过目标仓库的只读 API 读取模板. 不把其他仓库的模板套到目标仓库.
++ 完整读取已有标签, 按实际操作检查权限, 并提前检查子 issue 创建方式. 具体命令和权限边界见 [标签与子 issue 指南](references/labels-and-sub-issues.md).
++ 创建任何标签或 issue 前先查重, 同时检查开放和关闭的记录:
 
 ```bash
-gh issue view <number> --json number,title,labels,url
+gh issue list --repo HOST/OWNER/REPO --state all --search "关键词" --limit 100 --json number,title,state,url
 ```
 
-汇报编号, URL 和实际标签. 实际结果与草稿不一致时说明差异. 部分失败时不把整体报成完整成功, 明确列出失败项和原因.
+若结果达到上限, 缩小关键词或继续查询, 不声称已完整排除重复. 将相似 issue 的链接和状态放入草稿确认中, 由用户决定是否仍创建; 不把已关闭等同于可自动重新建单.
+
+### 3. 展示完整草稿并集中确认
+
+每条展示类型, 标题, 完整正文, 目标仓库, 已有或计划新建的标签, 父子关系及待确认项. 标签权限不足时先说明实际可行的方案, 不创建后再静默丢掉标签.
+
+仅草稿模式交付到此结束. 创建模式在写入前取得对这批具体草稿的确认, 包括新标签和重复 issue 的处理. 不将整个会话的泛泛认可当成对尚未展示草稿的批准.
+
+### 4. 创建并记录结果
+
++ 依次创建已确认的新标签, 父 issue 或独立 issue, 最后创建子 issue 并挂接. 使用 [标签与子 issue 指南](references/labels-and-sub-issues.md) 的能力检查和命令.
++ 标题作为独立参数传入, 正文保存到临时文件, 通过 `--body-file` 传入; 不把原文拼进会展开反引号或 `$()` 的 shell 字符串.
++ 每次写操作后记录实际返回的编号和 URL. 命令失败或超时时先只读核对是否已创建, 不盲目重试产生重复条目.
++ 创建返回 403 或 422, 或子 issue 挂接失败时停止后续依赖操作, 汇报已完成和失败的部分. 不自动修改父正文, 不回滚删除已创建的 issue, 不自动换一种写操作尝试绕过失败.
+
+### 5. 核对并汇报
+
+对每个已创建的 issue 显式使用同一目标仓库核对正文, 标签和 URL:
+
+```bash
+gh issue view NUMBER --repo HOST/OWNER/REPO --json number,title,body,labels,url
+```
+
+存在父子关系时, 使用指南中的只读 API 核对真实挂接结果. 对照批准的草稿报告编号, 链接, 实际标签和父子关系. 未确认的结果写为未确认, 挂接失败的子 issue 写为已创建但未挂接, 不把部分成功报成完整完成.
 
 ## 操作边界
 
-+ 只创建新 issue 和确认过的标签. 不修改, 关闭, 重开或评论已有 issue.
-+ 确认范围只涵盖展示过的草稿, 不顺手追加用户没有提到的 issue.
-+ 不设置 assignee, milestone 或 project, 除非用户明确要求.
-+ 不重命名, 改色或删除已有标签.
-+ 不把密钥, 访问令牌或未公开的内部地址写入 issue 正文.
-+ 目标仓库不明确时停下来询问, 不猜测.
++ 只创建已确认的新 issue 和新标签, 以及本轮草稿已确认的父子关系. 不修改, 关闭, 重开或评论已有 issue, 不自动补写父 issue 正文.
++ 不设置 assignee, milestone 或 project, 除非用户明确要求. 不重命名, 改色或删除已有标签.
++ 不把密钥, 访问令牌或未公开的内部地址写入 issue. 不顺手追加会话之外的需求.
