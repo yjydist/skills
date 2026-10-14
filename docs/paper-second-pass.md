@@ -1,6 +1,6 @@
 # paper-second-pass 使用文档
 
-`paper-second-pass` 对用户提供的学术论文执行第二遍理解阅读: 建立方法的准确 mental model (数据流, 训练与推理, 关键机制, 与 baseline 的结构差异), 并将每个主要 claim 映射到支撑实验, 审计 baselines, metrics, ablations, generalization 和 cost 是否让逻辑链闭合. 输出一份 16 节结构的精读报告 (Second-Pass Reading Report), 并给出是否值得进入第三遍 (逐式推导, 查证明, 复现) 的明确建议.
+`paper-second-pass` 对用户提供的学术论文执行第二遍理解阅读: 建立方法的准确 mental model (数据流, 训练与推理, 关键机制, 与 baseline 的结构差异), 并将每个主要 claim 映射到支撑实验, 审计 baselines, metrics, ablations, generalization 和 cost 是否让逻辑链闭合. 输出一份 16 节结构的精读报告 (Second-Pass Reading Report), 给出完整深读, 选择性深读或停止的建议. 选择性深读会明确要继续研究的问题和范围.
 
 ## 使用前提
 
@@ -52,5 +52,6 @@
 
 + [执行流程](../skills/paper-second-pass/SKILL.md): 输入确认, 阅读范围, 方法必答问题与操作边界.
 + [报告模板](../skills/paper-second-pass/references/report-format.md): 16 节完整结构与措辞要求.
++ [下游 skill](paper-third-pass.md): 接续完整或选择性深读, 以具体问题决定范围.
 + [上游 skill](paper-first-pass.md): 已决定精读之前的第一遍 triage 阅读.
 + [返回仓库说明](../README.md).

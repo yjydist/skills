@@ -23,6 +23,7 @@ description: 在用户已完成论文第一遍阅读并决定精读, 提供论�
 
 接受用户提供的 PDF, arXiv 页面, 论文全文文本或其他可读取的论文格式.
 
++ 链接输入先获取论文原文, 获取失败时说明原因并停止. 仅有第一遍报告不能替代原文; 非论文输入说明不适用并停止.
 + PDF 内容解析失败时, 明确向用户指出失败并停止, 不根据标题或常识猜测论文内容继续输出报告.
 + 用户提供第一遍报告 (Paper Snapshot) 时, 以其为起点并在报告中标注其结论需回原文验证; 未提供时不要求先跑第一遍, 直接进入第二遍.
 
@@ -82,6 +83,7 @@ description: 在用户已完成论文第一遍阅读并决定精读, 提供论�
 
 严格按照 [报告模板](references/report-format.md) 的 16 节结构输出 `# Second-Pass Reading Report`.
 
++ theory, survey, benchmark 等类型中不适配的项目注明不适用, 按证明, 分类框架或数据集评估等实际证据组织内容, 不硬凑训练或实验细节.
 + 第 15 节 Third-Pass Decision 给出 `DEEP READ / SELECTIVE DEEP READ / STOP` 三选一.
 + Evidence Index 的定位必须来自实际读取的内容, 严禁伪造; 无法定位的判断如实说明.
 

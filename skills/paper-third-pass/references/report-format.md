@@ -1,6 +1,6 @@
 # 报告模板
 
-每次执行 paper-third-pass 都按本模板结构输出报告. 报告标题固定为 `# Deep Reading Report`. 头部字段之后是 20 个编号小节.
+paper-third-pass 的完整模式按本模板结构输出报告. 选择性模式使用 [选择性报告模板](selective-report-format.md). 报告标题固定为 `# Deep Reading Report`. 头部字段之后是 20 个编号小节.
 
 报告正文使用简体中文, 论文原有术语保留英文原文. 关键判断尽可能给出论文内定位, 代码判断给出代码定位, 引用格式见第 20 节.
 
@@ -61,7 +61,7 @@ Input -> preprocessing -> representation -> core mechanism -> objective -> optim
 
 ### 5. Mathematical Core
 
-对每个关键公式给出八要素:
+对每个关键公式说明以下要素:
 
 ```text
 Equation: (编号或定位)
@@ -72,6 +72,7 @@ Derivation: 它从哪里来, 关键推导步骤; 标准公式说明来源即可
 Intuition: 直觉理解, 各项作用, 去掉某项会怎样
 Assumptions: 公式成立依赖的假设
 Edge cases: 退化情形, 数值问题, 边界条件
+Connection to core idea: 公式与核心机制的关系
 Implementation mapping: 代码中对应的位置; 无代码时写 Unknown
 ```
 
@@ -131,7 +132,7 @@ What this does NOT prove: 该实验不能支撑的结论
 
 ### 11. Reproduction Blueprint
 
-给出足以复现论文主结果的蓝图, 由 8 个 Step 组成, 每个 Step 用固定小节块:
+给出复现论文主结果的蓝图, 覆盖下列阶段, 按实际依赖拆分步骤. 每个步骤用固定小节块:
 
 ```text
 Step N - <名称>: environment / data / model / training / evaluation / expected outputs / reproduction risks 之一
@@ -193,14 +194,14 @@ Overall assessment: ...
 
 ### 16. Reimplementation Checklist
 
-给出从零重新实现本方法所需的任务列表, 使用 `- [ ]` 任务列表语法, 按论文实际内容调整条目:
+给出从零重新实现本方法所需的任务列表, 使用 `+ [ ]` 任务列表语法, 按论文实际内容调整条目:
 
 ```text
-- [ ] 环境: ...
-- [ ] 数据: ...
-- [ ] 模型: ...
-- [ ] 训练: ...
-- [ ] 评估: ...
++ [ ] 环境: ...
++ [ ] 数据: ...
++ [ ] 模型: ...
++ [ ] 训练: ...
++ [ ] 评估: ...
 ```
 
 + 条目具体到可直接执行, 不写 "实现模型" 这类空泛条目.

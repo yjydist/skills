@@ -189,7 +189,7 @@ Potential failure modes:
 **Recommendation: DEEP READ / SELECTIVE DEEP READ / STOP**
 ```
 
-三选一, 然后分别回答:
+三选一. `DEEP READ` 对应完整第三遍; `SELECTIVE DEEP READ` 必须指出具体问题及需要检查的公式, 实验或代码范围, 供第三遍选择性模式使用; `STOP` 说明停止理由, 后续优先级和问题可写不适用, 不为满足数量硬凑. 然后按适用情况回答:
 
 **为什么值得 (或不值得) 第三遍:**
 
