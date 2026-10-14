@@ -11,7 +11,7 @@ description: 在用户提供论文 (PDF, arXiv 页面或全文) 并希望快速�
 
 + 第一遍的价值在于 information gain per minute, 而不是 completeness. 目标不是全部看懂, 而是找出论文的 narrative: Problem -> Existing approaches -> Limitation / Gap -> Proposed idea -> Claimed contribution -> Evidence -> Conclusion.
 + 最终报告必须让用户无需先阅读全文, 也能决定是否投入时间进入第二遍.
-+ 作者 claim 与 agent 自己的判断必须分开: 作者声称的内容使用「作者认为 / 作者报告 / 作者声称」等措辞, 自己的评价单独给出.
++ 作者 claim 与 agent 自己的判断必须分开: 作者声称的内容使用"作者认为 / 作者报告 / 作者声称"等措辞, 自己的评价单独给出.
 + 只基于实际读取的内容作答, 不假装理解没有读取到的部分, 不根据论文标题或常识猜测论文内容.
 
 ## 工作流程
