@@ -5,7 +5,7 @@ description: 在用户要求生成周报或月报, 或明确调用本 skill 时,
 
 # 周报与月报
 
-使用 [模板](template.typ) 和 [渲染脚本](scripts/render.py) 生成周报或月报. 保留模板中的 A4 页面, 字体, 字号, 页边距, 标题, 信息行和类别表格, 内容过长时自然分页.
+使用 [周报模板](references/weekly-template.typ) 或 [月报模板](references/monthly-template.typ) 和 [渲染脚本](scripts/render.py) 生成周报或月报, 脚本按报告类型选择模板. 保留模板中的 A4 页面, 字体, 字号, 页边距, 标题, 信息行和类别表格, 内容过长时自然分页.
 
 ## 工作流程
 
@@ -25,7 +25,7 @@ description: 在用户要求生成周报或月报, 或明确调用本 skill 时,
 
 ### 2. 运行渲染脚本
 
-需要 Python 3.9+, Typst 0.13+ 和字体族 `Alimama FangYuanTi`. 脚本会实际检查 Typst 版本和字体列表. 缺失时报告并停止, 不自动安装或替换字体.
+需要 Python 3.9+ 和 Typst 0.13+. 模板优先使用 `Alimama FangYuanTi VF`, 其次 `Alimama FangYuanTi`; 两者都不存在时脚本提示并回退到默认字体, 不停止渲染. 脚本会实际检查 Typst 版本和字体列表.
 
 输入 JSON 包含以下字段. `nth` 仅周报需要. `attendance_hours` 与 `attendance_early` 可写数字或非空字符串. 其余文本字段均为非空字符串, `contributions` 与 `research` 为非空字符串数组. 使用 JSON 序列化工具保存内容, 不手工拼接用户文本到 shell 命令或 Typst 标记中.
 

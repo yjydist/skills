@@ -5,7 +5,7 @@
 ## 使用前提
 
 + 将 [skill 目录](../skills/weekly-report/SKILL.md) 连同模板和 `scripts/` 一起提供给执行工具, 保持相对路径.
-+ 需要 Python 3.9+, Typst 0.13+ 和字体族 `Alimama FangYuanTi`. 渲染脚本只依赖 Python 标准库.
++ 需要 Python 3.9+ 和 Typst 0.13+. 模板优先使用 `Alimama FangYuanTi VF`, 其次 `Alimama FangYuanTi`, 两者都缺失时回退默认字体. 渲染脚本只依赖 Python 标准库.
 + 提供类型(周报或月报), 年月, 姓名, 学号, 日期范围, 各类别内容, 考勤和自我评价. 周报还需提供当月第几次. 年月省略时按用户当前日期补齐, 并在交付时说明.
 
 下方用 `$weekly-report` 表示调用. 工具不支持这种形式时, 指定本 skill 的 `SKILL.md` 实际路径.
@@ -42,7 +42,7 @@ python3 skills/weekly-report/scripts/render.py --input input.json --output-dir o
 
 ## 异常处理与检查
 
-+ 缺少 Typst, 版本低于 0.13 或缺少目标字体时停止, 不自动安装或替换.
++ 缺少 Typst 或版本低于 0.13 时停止, 不自动安装. 两种目标字体都缺失时提示并回退到默认字体, 不停止.
 + 无效输入或编译失败时返回非零退出码, 显示原因, 不交付部分图片.
 + 同名源文件或同前缀的单页, 多页图片已存在时停止, 不覆盖. 可指定新输出目录后重试.
 + 每张图片均为 2480 x 3508 像素. 交付前检查所有页面的字形, 表格内容与分页, 最终只交付 PNG 和 Typst 文件.
@@ -55,17 +55,17 @@ python3 skills/weekly-report/scripts/render.py --input input.json --output-dir o
 python3 -m unittest discover -s tests -p test_weekly_report.py -v
 ```
 
-默认跳过两项真实渲染测试. 安装 Typst 0.13+ 和 `Alimama FangYuanTi` 字体后, 在支持此环境变量语法的 shell 中运行:
+默认跳过两项真实渲染测试. 安装 Typst 0.13+ 后, 在支持此环境变量语法的 shell 中运行:
 
 ```bash
 RUN_TYPST_TESTS=1 python3 -m unittest discover -s tests -p test_weekly_report.py -v
 ```
 
-真实测试覆盖特殊字符和换行的原文保留, 独立源文件编译, 单页与多页交付. 版式和中文显示还需要查看生成的图片进行验收.
+真实测试覆盖特殊字符和换行的原文保留, 独立源文件编译, 单页与多页交付. 建议安装 `Alimama FangYuanTi VF` 或 `Alimama FangYuanTi` 以核对正式字形, 都缺失时测试仍运行但使用回退字体. 版式和中文显示还需要查看生成的图片进行验收.
 
 ## 进一步阅读
 
 + [执行流程](../skills/weekly-report/SKILL.md).
-+ [Typst 模板](../skills/weekly-report/template.typ).
++ [周报模板](../skills/weekly-report/references/weekly-template.typ) 和 [月报模板](../skills/weekly-report/references/monthly-template.typ).
 + [渲染脚本](../skills/weekly-report/scripts/render.py).
 + [返回仓库说明](../README.md).

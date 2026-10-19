@@ -77,14 +77,30 @@ class WeeklyReportTests(unittest.TestCase):
             self.assertFalse((root / "first").exists())
             self.assertEqual(existing.read_bytes(), b"original")
 
-    def test_environment_rejects_old_typst_and_missing_font(self):
+    def test_environment_rejects_old_typst(self):
         with patch.object(report.shutil, "which", return_value="typst"):
             with patch.object(report, "run_typst", return_value="typst 0.12.0"):
                 with self.assertRaisesRegex(report.ReportError, "0.13"):
                     report.check_environment()
-            with patch.object(report, "run_typst", side_effect=["typst 0.15.1", "Other Font"]):
-                with self.assertRaisesRegex(report.ReportError, "缺少字体"):
-                    report.check_environment()
+
+    def test_environment_allows_missing_fonts(self):
+        with patch.object(report.shutil, "which", return_value="typst"):
+            for fonts in ("Alimama FangYuanTi", "Other Font"):
+                with self.subTest(fonts=fonts), patch.object(
+                    report, "run_typst", side_effect=["typst 0.15.1", fonts]
+                ):
+                    self.assertEqual(report.check_environment(), "typst")
+
+    def test_build_source_selects_template_by_kind(self):
+        weekly = report.build_source(sample())
+        self.assertIn("  nth:", weekly)
+        self.assertIn("次周报", weekly)
+        monthly = sample(kind="月报")
+        del monthly["nth"]
+        source = report.build_source(monthly)
+        self.assertNotIn("  nth:", source)
+        self.assertNotIn("report.nth", source)
+        self.assertIn("月月报", source)
 
 
 @unittest.skipUnless(os.environ.get("RUN_TYPST_TESTS") == "1", "真实渲染需设置 RUN_TYPST_TESTS=1")

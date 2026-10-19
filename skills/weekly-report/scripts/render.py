@@ -12,8 +12,11 @@ import tempfile
 from pathlib import Path
 
 
-FONT = "Alimama FangYuanTi"
-TEMPLATE = Path(__file__).resolve().parents[1] / "template.typ"
+FONTS = ("Alimama FangYuanTi VF", "Alimama FangYuanTi")
+TEMPLATES = {
+    "周报": Path(__file__).resolve().parents[1] / "references" / "weekly-template.typ",
+    "月报": Path(__file__).resolve().parents[1] / "references" / "monthly-template.typ",
+}
 START = "// REPORT_DATA_START"
 END = "// REPORT_DATA_END"
 
@@ -88,7 +91,7 @@ def typst_string(value):
 
 def build_source(report):
     validate_report(report)
-    template = TEMPLATE.read_text(encoding="utf-8")
+    template = TEMPLATES[report["kind"]].read_text(encoding="utf-8")
     if template.count(START) != 1 or template.count(END) != 1:
         raise ReportError("模板必须包含唯一的数据块起止标记.")
     before, body = template.split(START)
@@ -144,8 +147,12 @@ def check_environment():
     match = re.search(r"typst (\d+)\.(\d+)\.(\d+)", version)
     if not match or tuple(map(int, match.groups())) < (0, 13, 0):
         raise ReportError("需要 Typst 0.13 或更高版本, 当前为: " + version.strip())
-    if FONT not in run_typst([executable, "fonts"]).splitlines():
-        raise ReportError("缺少字体: " + FONT + ". 请安装后重新运行, 不自动替换字体.")
+    installed = run_typst([executable, "fonts"]).splitlines()
+    if not any(font in installed for font in FONTS):
+        print(
+            "提示: 未找到 " + " 或 ".join(FONTS) + " 字体, 使用默认回退字体渲染.",
+            file=sys.stderr,
+        )
     return executable
 
 
