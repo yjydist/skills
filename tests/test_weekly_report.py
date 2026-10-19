@@ -16,22 +16,41 @@ report = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(report)
 
 
-def sample(items=None):
-    return {"year": 2026, "semester": "春季", "week": 3, "items": items or ["完成开发与验证"]}
+def sample(**change):
+    base = {
+        "kind": "周报", "year": 2026, "month": 3, "nth": 2,
+        "name": "常瑞", "student_id": "25031212280",
+        "start": "2026.3.2", "end": "2026.3.8",
+        "contributions": ["查看和对比实验室主机的硬件设备"],
+        "research": ["读师兄师姐的大论文，积累综述的素材"],
+        "service": "无", "exercise": "日常锻炼", "reflection": "无", "lesson": "无",
+        "attendance_hours": "5.5", "attendance_early": "5",
+        "self_evaluation": "满意",
+    }
+    base.update(change)
+    return base
 
 
 class WeeklyReportTests(unittest.TestCase):
     def test_invalid_input_stops_before_running_typst(self):
+        monthly = sample(kind="月报")
+        del monthly["nth"]
+        cases = (
+            sample(nth=True), sample(year=0), sample(month=13), sample(kind="季报"),
+            sample(contributions=[]), sample(research=[""]), sample(self_evaluation="一般"),
+            sample(attendance_hours=" "), sample(extra=1), dict(monthly, nth=1),
+            {key: value for key, value in sample().items() if key != "name"},
+        )
         with tempfile.TemporaryDirectory() as directory, patch.object(report, "check_environment") as check:
-            for change in ({"week": True}, {"year": 0}, {"semester": "暑期"}, {"items": []}):
-                with self.subTest(change=change), self.assertRaises(report.ReportError):
-                    report.render_report(dict(sample(), **change), directory)
+            for case in cases:
+                with self.subTest(case=case), self.assertRaises(report.ReportError):
+                    report.render_report(case, directory)
             check.assert_not_called()
             self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_existing_multi_page_output_is_preserved(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(report, "check_environment") as check:
-            existing = Path(directory) / "weekly-report-2026春-第3周-第2页.png"
+            existing = Path(directory) / "weekly-report-2026年3月第2次-第2页.png"
             existing.write_bytes(b"original")
             with self.assertRaises(report.ReportError):
                 report.render_report(sample(), directory)
@@ -74,11 +93,11 @@ class TypstIntegrationTests(unittest.TestCase):
         items = ['普通中文 #issue $HOME *星号* _下划线_ [括号] @引用 "引号"',
                  'C:\\data\\file.txt\n第二行\t内容']
         with tempfile.TemporaryDirectory() as directory:
-            result = report.render_report(sample(items), directory)
+            result = report.render_report(sample(research=items), directory)
             self.assertEqual(result["pages"], 1)
             self.assertEqual({Path(p).suffix for p in result["files"]}, {".typ", ".png"})
             source = Path(result["files"][0])
-            source.write_text(source.read_text() + '\n#metadata(report.items) <items>\n', encoding="utf-8")
+            source.write_text(source.read_text() + '\n#metadata(report.research) <items>\n', encoding="utf-8")
             queried = subprocess.check_output(["typst", "query", str(source), "<items>", "--field", "value"], text=True)
             self.assertEqual(json.loads(queried), [items])
             subprocess.run(["typst", "compile", str(source), str(Path(directory) / "independent.png"),
@@ -86,7 +105,7 @@ class TypstIntegrationTests(unittest.TestCase):
 
     def test_all_pages_are_delivered_in_order(self):
         with tempfile.TemporaryDirectory() as directory:
-            result = report.render_report(sample([f"第 {i} 项: 完成开发与验证." for i in range(100)]), directory)
+            result = report.render_report(sample(research=[f"第 {i} 项: 完成开发与验证." for i in range(100)]), directory)
             self.assertGreater(result["pages"], 1)
             self.assertEqual(len(list(Path(directory).iterdir())), result["pages"] + 1)
             for index, file in enumerate(result["files"][1:], 1):

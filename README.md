@@ -13,7 +13,7 @@
 + convenient-commit: 按逻辑完整性规划提交边界, 拟定提交消息, 并在授权范围内创建 Git 提交. [具体文档](docs/convenient-commit.md)
 + to-github-issue: 将会话待办整理为无需认证的 issue 草稿, 创建时核对仓库与权限并集中确认, 支持父子 issue. [具体文档](docs/to-github-issue.md)
 + swiss-grid-design: 用瑞士国际主义的网格, 字体与留白创建, 调整或评审多媒介视觉方案, 明确默认参数和功能例外. [具体文档](docs/swiss-grid-design.md)
-+ weekly-report: 原样保留用户进展, 渲染为 A4 尺寸 300 DPI PNG 周报图与独立 Typst 源文件, 超页时自动输出多张图片. [具体文档](docs/weekly-report.md)
++ weekly-report: 按固定表格版式渲染周报或月报, 原样保留用户内容, 输出 A4 尺寸 300 DPI PNG 与独立 Typst 源文件, 超页时自动输出多张图片. [具体文档](docs/weekly-report.md)
 + paper-first-pass: 对学术论文执行第一遍 triage 阅读, 输出论文快照报告与第二遍阅读建议. [具体文档](docs/paper-first-pass.md)
 + paper-second-pass: 对学术论文执行第二遍理解阅读, 建立方法 mental model 与实验到 claim 的证据映射, 输出 16 节精读报告与第三遍阅读建议. [具体文档](docs/paper-second-pass.md)
 + paper-third-pass: 对学术论文执行第三遍深度阅读, 重建逻辑链并深入分析数学, 实验与代码, 支持完整 20 节报告或围绕指定问题的选择性报告. [具体文档](docs/paper-third-pass.md)

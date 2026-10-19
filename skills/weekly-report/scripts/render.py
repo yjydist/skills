@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""将周报 JSON 渲染为独立 Typst 源文件和 A4 PNG 图片."""
+"""将周报或月报 JSON 渲染为独立 Typst 源文件和 A4 PNG 图片."""
 
 import argparse
 import json
@@ -18,24 +18,63 @@ START = "// REPORT_DATA_START"
 END = "// REPORT_DATA_END"
 
 
+KINDS = ("周报", "月报")
+EVALUATIONS = ("非常满意", "满意", "不太满意")
+REQUIRED = (
+    "kind", "year", "month", "name", "student_id", "start", "end",
+    "contributions", "research", "service", "exercise", "reflection", "lesson",
+    "attendance_hours", "attendance_early", "self_evaluation",
+)
+
+
 class ReportError(Exception):
     """可以直接向用户报告的输入或渲染错误."""
 
 
 def validate_report(report):
-    if not isinstance(report, dict) or set(report) != {"year", "semester", "week", "items"}:
-        raise ReportError("输入必须包含且仅包含 year, semester, week, items 四个字段.")
+    if not isinstance(report, dict):
+        raise ReportError("输入必须是 JSON 对象.")
+    missing = [key for key in REQUIRED if key not in report]
+    unknown = sorted(set(report) - set(REQUIRED) - {"nth"})
+    if missing or unknown:
+        problems = []
+        if missing:
+            problems.append("缺少字段: " + ", ".join(missing))
+        if unknown:
+            problems.append("未知字段: " + ", ".join(unknown))
+        raise ReportError("; ".join(problems) + ".")
+    if report["kind"] not in KINDS:
+        raise ReportError('kind 必须是 "周报" 或 "月报".')
+    if report["kind"] == "周报":
+        if type(report.get("nth")) is not int or report["nth"] < 1:
+            raise ReportError("周报的 nth 必须是正整数, 表示当月第几次周报.")
+    elif "nth" in report:
+        raise ReportError("月报不包含 nth 字段.")
     if type(report["year"]) is not int or not 1 <= report["year"] <= 9999:
         raise ReportError("year 必须是 1 至 9999 之间的整数.")
-    if report["semester"] not in ("春季", "秋季"):
-        raise ReportError('semester 必须是 "春季" 或 "秋季".')
-    if type(report["week"]) is not int or report["week"] < 1:
-        raise ReportError("week 必须是正整数.")
-    items = report["items"]
-    if not isinstance(items, list) or not items or any(
-        not isinstance(item, str) or not item.strip() for item in items
-    ):
-        raise ReportError("items 必须是非空字符串数组, 每条至少包含一个非空白字符.")
+    if type(report["month"]) is not int or not 1 <= report["month"] <= 12:
+        raise ReportError("month 必须是 1 至 12 之间的整数.")
+    for key in ("name", "student_id", "start", "end",
+                "service", "exercise", "reflection", "lesson"):
+        if not isinstance(report[key], str) or not report[key].strip():
+            raise ReportError(key + " 必须是非空字符串.")
+    for key in ("contributions", "research"):
+        items = report[key]
+        if not isinstance(items, list) or not items or any(
+            not isinstance(item, str) or not item.strip() for item in items
+        ):
+            raise ReportError(key + " 必须是非空字符串数组, 每条至少包含一个非空白字符.")
+    for key in ("attendance_hours", "attendance_early"):
+        value = report[key]
+        if isinstance(value, str):
+            if not value.strip():
+                raise ReportError(key + " 不能为空字符串.")
+        elif type(value) in (int, float):
+            report[key] = format(value, "g")
+        else:
+            raise ReportError(key + " 必须是非空字符串或数字.")
+    if report["self_evaluation"] not in EVALUATIONS:
+        raise ReportError('self_evaluation 必须是 "非常满意", "满意" 或 "不太满意".')
     return report
 
 
@@ -54,14 +93,37 @@ def build_source(report):
         raise ReportError("模板必须包含唯一的数据块起止标记.")
     before, body = template.split(START)
     _, after = body.split(END)
-    items = "\n".join("    " + typst_string(item) + "," for item in report["items"])
-    data = (
-        "\n#let report = (\n"
-        f'  year: {report["year"]},\n'
-        f'  semester: {typst_string(report["semester"])},\n'
-        f'  week: {report["week"]},\n'
-        f"  items: (\n{items}\n  ),\n)\n"
-    )
+
+    def array(items):
+        return "(\n" + "\n".join(
+            "    " + typst_string(item) + "," for item in items
+        ) + "\n  )"
+
+    fields = [
+        ("kind", typst_string(report["kind"])),
+        ("year", str(report["year"])),
+        ("month", str(report["month"])),
+    ]
+    if report["kind"] == "周报":
+        fields.append(("nth", str(report["nth"])))
+    fields += [
+        ("name", typst_string(report["name"])),
+        ("student_id", typst_string(report["student_id"])),
+        ("start", typst_string(report["start"])),
+        ("end", typst_string(report["end"])),
+        ("contributions", array(report["contributions"])),
+        ("research", array(report["research"])),
+        ("service", typst_string(report["service"])),
+        ("exercise", typst_string(report["exercise"])),
+        ("reflection", typst_string(report["reflection"])),
+        ("lesson", typst_string(report["lesson"])),
+        ("attendance_hours", typst_string(report["attendance_hours"])),
+        ("attendance_early", typst_string(report["attendance_early"])),
+        ("self_evaluation", typst_string(report["self_evaluation"])),
+    ]
+    data = "\n#let report = (\n" + "\n".join(
+        "  " + key + ": " + value + "," for key, value in fields
+    ) + "\n)\n"
     return before + START + data + END + after
 
 
@@ -117,7 +179,11 @@ def publish_files(files, output_dir):
 
 def render_report(report, output_dir):
     source = build_source(report)
-    stem = f'weekly-report-{report["year"]}{report["semester"][0]}-第{report["week"]}周'
+    period = f'{report["year"]}年{report["month"]}月'
+    if report["kind"] == "周报":
+        stem = f"weekly-report-{period}第{report['nth']}次"
+    else:
+        stem = f"monthly-report-{period}"
     output_dir = Path(output_dir).resolve()
     check_conflicts(output_dir, stem)
     executable = check_environment()
