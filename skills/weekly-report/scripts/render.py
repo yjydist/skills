@@ -179,6 +179,12 @@ def publish_files(files, output_dir):
                 created.append(destination)
                 with source.open("rb") as data:
                     shutil.copyfileobj(data, target)
+    except FileExistsError as error:
+        for path in created:
+            path.unlink()
+        raise ReportError(
+            "已有同名产物, 请选择其他目录或先处理原文件: " + str(error.filename)
+        ) from error
     except OSError:
         for path in created:
             path.unlink()

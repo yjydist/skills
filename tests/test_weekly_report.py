@@ -74,7 +74,7 @@ class WeeklyReportTests(unittest.TestCase):
             source.write_bytes(b"new")
             existing = root / "existing"
             existing.write_bytes(b"original")
-            with self.assertRaises(FileExistsError):
+            with self.assertRaisesRegex(report.ReportError, "existing"):
                 report.publish_files([(source, "first"), (source, "existing")], root)
             self.assertFalse((root / "first").exists())
             self.assertEqual(existing.read_bytes(), b"original")
