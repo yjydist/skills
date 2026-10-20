@@ -112,6 +112,29 @@ class WeeklyReportTests(unittest.TestCase):
         self.assertNotIn("report.nth", source)
         self.assertIn("月月报", source)
 
+    def test_output_path_must_be_directory(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(report, "check_environment") as check:
+            target = Path(directory) / "output"
+            target.write_text("not a directory", encoding="utf-8")
+            with self.assertRaisesRegex(report.ReportError, "不是目录"):
+                report.render_report(sample(), target)
+            check.assert_not_called()
+
+    def test_stdin_input_is_rendered_once(self):
+        with patch.object(report.sys, "argv", ["render.py", "--input", "-"]), patch(
+            "sys.stdin", io.StringIO(json.dumps(sample(), ensure_ascii=False))
+        ), patch.object(report, "render_report", return_value={"pages": 1}) as render:
+            self.assertEqual(report.main(), 0)
+            render.assert_called_once()
+            self.assertEqual(render.call_args.args[0], sample())
+
+    def test_stdin_invalid_input_reports_failure(self):
+        with patch.object(report.sys, "argv", ["render.py", "--input", "-"]), patch(
+            "sys.stdin", io.StringIO('{"kind": "周报"}')
+        ), patch("sys.stderr", new_callable=io.StringIO) as stderr:
+            self.assertEqual(report.main(), 1)
+            self.assertTrue(stderr.getvalue().startswith("周报生成失败: "))
+
     def test_font_note_is_passed_through(self):
         def fake_run(command):
             work = Path(command[2]).parent
