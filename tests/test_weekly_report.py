@@ -129,6 +129,11 @@ class WeeklyReportTests(unittest.TestCase):
             self.assertEqual(result["font_note"], "字体缺失提示")
             self.assertEqual(result["pages"], 1)
 
+    def test_typst_string_rejects_non_string(self):
+        for value in (1, 5.5, None):
+            with self.subTest(value=value), self.assertRaisesRegex(report.ReportError, "字符串"):
+                report.typst_string(value)
+
 
 @unittest.skipUnless(os.environ.get("RUN_TYPST_TESTS") == "1", "真实渲染需设置 RUN_TYPST_TESTS=1")
 class TypstIntegrationTests(unittest.TestCase):

@@ -82,6 +82,8 @@ def validate_report(report):
 
 
 def typst_string(value):
+    if not isinstance(value, str):
+        raise ReportError("内部错误: typst_string 需要字符串, 实际收到 " + type(value).__name__ + ".")
     escapes = {"\\": "\\\\", '"': '\\"', "\n": "\\n", "\r": "\\r", "\t": "\\t"}
     return '"' + "".join(
         escapes.get(char, "\\u{" + format(ord(char), "x") + "}" if ord(char) < 32 else char)
