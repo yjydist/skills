@@ -149,11 +149,13 @@ def check_environment():
         raise ReportError("需要 Typst 0.13 或更高版本, 当前为: " + version.strip())
     installed = run_typst([executable, "fonts"]).splitlines()
     if not any(font in installed for font in FONTS):
-        print(
-            "提示: 未找到 " + " 或 ".join(FONTS) + " 字体, 使用默认回退字体渲染.",
-            file=sys.stderr,
+        note = (
+            "未找到 " + " 或 ".join(FONTS) + " 字体, 已使用默认回退字体, 中文字形可能与预期不同."
         )
-    return executable
+        print("提示: " + note, file=sys.stderr)
+    else:
+        note = None
+    return executable, note
 
 
 def check_conflicts(output_dir, stem):
@@ -193,7 +195,7 @@ def render_report(report, output_dir):
         stem = f"monthly-report-{period}"
     output_dir = Path(output_dir).resolve()
     check_conflicts(output_dir, stem)
-    executable = check_environment()
+    executable, font_note = check_environment()
     with tempfile.TemporaryDirectory(prefix="weekly-report-") as temporary:
         work = Path(temporary)
         typ_path = work / (stem + ".typ")
@@ -219,7 +221,11 @@ def render_report(report, output_dir):
         output_dir.mkdir(parents=True, exist_ok=True)
         check_conflicts(output_dir, stem)
         delivered = publish_files(files, output_dir)
-    return {"pages": len(pages), "files": [str(path) for path in delivered]}
+    return {
+        "pages": len(pages),
+        "files": [str(path) for path in delivered],
+        "font_note": font_note,
+    }
 
 
 def main():

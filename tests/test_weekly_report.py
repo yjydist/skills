@@ -1,9 +1,11 @@
 """验证周报失败处理与真实渲染结果."""
 
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
+import struct
 import subprocess
 import tempfile
 import unittest
@@ -59,7 +61,7 @@ class WeeklyReportTests(unittest.TestCase):
 
     def test_compile_failure_delivers_nothing(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(
-            report, "check_environment", return_value="typst"
+            report, "check_environment", return_value=("typst", None)
         ), patch.object(report, "run_typst", side_effect=report.ReportError("编译失败")):
             with self.assertRaisesRegex(report.ReportError, "编译失败"):
                 report.render_report(sample(), directory)
@@ -84,12 +86,20 @@ class WeeklyReportTests(unittest.TestCase):
                     report.check_environment()
 
     def test_environment_allows_missing_fonts(self):
-        with patch.object(report.shutil, "which", return_value="typst"):
-            for fonts in ("Alimama FangYuanTi", "Other Font"):
-                with self.subTest(fonts=fonts), patch.object(
-                    report, "run_typst", side_effect=["typst 0.15.1", fonts]
-                ):
-                    self.assertEqual(report.check_environment(), "typst")
+        with patch.object(report.shutil, "which", return_value="typst"), patch.object(
+            report, "run_typst", side_effect=["typst 0.15.1", "Other Font"]
+        ), patch("sys.stderr", new_callable=io.StringIO) as stderr:
+            path, note = report.check_environment()
+            self.assertEqual(path, "typst")
+            self.assertIsNotNone(note)
+            self.assertIn("Alimama", note)
+            self.assertTrue(stderr.getvalue().startswith("提示: "))
+
+    def test_environment_reports_no_note_when_fonts_present(self):
+        with patch.object(report.shutil, "which", return_value="typst"), patch.object(
+            report, "run_typst", side_effect=["typst 0.15.1", "Alimama FangYuanTi"]
+        ):
+            self.assertEqual(report.check_environment(), ("typst", None))
 
     def test_build_source_selects_template_by_kind(self):
         weekly = report.build_source(sample())
@@ -102,6 +112,23 @@ class WeeklyReportTests(unittest.TestCase):
         self.assertNotIn("report.nth", source)
         self.assertIn("月月报", source)
 
+    def test_font_note_is_passed_through(self):
+        def fake_run(command):
+            work = Path(command[2]).parent
+            payload = (
+                b"\x89PNG\r\n\x1a\n" + struct.pack(">I", 13) + b"IHDR"
+                + struct.pack(">II", 2480, 3508) + b"\x08\x06\x00\x00\x00"
+            )
+            (work / "page-1.png").write_bytes(payload)
+            return ""
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            report, "check_environment", return_value=("typst", "字体缺失提示")
+        ), patch.object(report, "run_typst", side_effect=fake_run):
+            result = report.render_report(sample(), directory)
+            self.assertEqual(result["font_note"], "字体缺失提示")
+            self.assertEqual(result["pages"], 1)
+
 
 @unittest.skipUnless(os.environ.get("RUN_TYPST_TESTS") == "1", "真实渲染需设置 RUN_TYPST_TESTS=1")
 class TypstIntegrationTests(unittest.TestCase):
@@ -111,6 +138,7 @@ class TypstIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             result = report.render_report(sample(research=items), directory)
             self.assertEqual(result["pages"], 1)
+            self.assertIsNone(result["font_note"])
             self.assertEqual({Path(p).suffix for p in result["files"]}, {".typ", ".png"})
             source = Path(result["files"][0])
             source.write_text(source.read_text() + '\n#metadata(report.research) <items>\n', encoding="utf-8")

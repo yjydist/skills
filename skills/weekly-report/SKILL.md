@@ -25,7 +25,7 @@ description: 在用户要求生成周报或月报, 或明确调用本 skill 时,
 
 ### 2. 运行渲染脚本
 
-需要 Python 3.9+ 和 Typst 0.13+. 模板优先使用 `Alimama FangYuanTi VF`, 其次 `Alimama FangYuanTi`; 两者都不存在时脚本提示并回退到默认字体, 不停止渲染. 脚本会实际检查 Typst 版本和字体列表.
+需要 Python 3.9+ 和 Typst 0.13+. 模板优先使用 `Alimama FangYuanTi VF`, 其次 `Alimama FangYuanTi`; 两者都不存在时脚本回退到默认字体, 不停止渲染, 并通过结果中的 `font_note` 返回提示. 脚本会实际检查 Typst 版本和字体列表.
 
 输入 JSON 包含以下字段. `nth` 仅周报需要. `attendance_hours` 与 `attendance_early` 可写数字或非空字符串. 其余文本字段均为非空字符串, `contributions` 与 `research` 为非空字符串数组. 使用 JSON 序列化工具保存内容, 不手工拼接用户文本到 shell 命令或 Typst 标记中.
 
@@ -68,6 +68,7 @@ python3 /path/to/weekly-report/scripts/render.py --input /path/to/input.json --o
 + 每页为 A4 尺寸 300 DPI PNG, 即 2480 x 3508 像素. 不通过缩字, 截断或改写条目控制页数.
 + 使用当前环境的图像查看工具检查所有页面, 确认标题, 信息行, 表格边框, 中文字形, 各类别内容及分页没有丢失内容.
 + 汇报页数, 所有 PNG 路径和 Typst 源文件路径, 以及实际使用的默认年月. 最终产物只包含 `.png` 和 `.typ`, 临时输入不作为交付物.
++ 结果中的 `font_note` 非空时, 在交付说明里告知用户已回退字体, 中文字形可能与预期不同.
 
 需要重新编译已交付源文件时, 多页 PNG 的输出路径必须包含 `{p}`:
 
