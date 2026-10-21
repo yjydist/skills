@@ -30,9 +30,23 @@
 
 #let period = "本月"
 #let lines(items) = items.map(item => [#item]).join(linebreak())
+#let check-box(selected) = box(
+  width: 0.85em,
+  height: 0.85em,
+  baseline: 0.11em,
+  inset: 0pt,
+  stroke: 0.5pt,
+  if selected {
+    curve(
+      stroke: (paint: black, thickness: 0.10em, cap: "round", join: "round"),
+      curve.move((22%, 52%)),
+      curve.line((41%, 73%)),
+      curve.line((80%, 25%)),
+    )
+  },
+)
 #let evaluations = ("非常满意", "满意", "不太满意").map(option => {
-  let mark = if option == report.self_evaluation { sym.ballot.cross } else { sym.ballot }
-  [#mark #option]
+  [#check-box(option == report.self_evaluation)#h(0.4em)#option]
 })
 #let head-cell(body) = table.cell(align: center + horizon, text(weight: "bold", body))
 #let cat-cell(body) = table.cell(align: center + horizon, body)
@@ -82,7 +96,7 @@
   [],
   cat-cell[自我评价],
   body-cell[
-    #(period)进度或学习状态　#(evaluations.join("　"))
+    #(period)进度或学习状态#h(1em)#(evaluations.join(h(1.2em)))
   ],
   [],
 )
