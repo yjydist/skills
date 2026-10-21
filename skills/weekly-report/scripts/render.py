@@ -12,7 +12,8 @@ import tempfile
 from pathlib import Path
 
 
-FONTS = ("Alimama FangYuanTi VF", "Alimama FangYuanTi")
+FONTS = ("Alimama FangYuanTi",)
+DEFAULTS = {"name": "易靖远", "student_id": "26031210039G"}
 TEMPLATES = {
     "周报": Path(__file__).resolve().parents[1] / "references" / "weekly-template.typ",
     "月报": Path(__file__).resolve().parents[1] / "references" / "monthly-template.typ",
@@ -24,7 +25,7 @@ END = "// REPORT_DATA_END"
 KINDS = ("周报", "月报")
 EVALUATIONS = ("非常满意", "满意", "不太满意")
 REQUIRED = (
-    "kind", "year", "month", "name", "student_id", "start", "end",
+    "kind", "year", "month", "start", "end",
     "contributions", "research", "service", "exercise", "reflection", "lesson",
     "attendance_hours", "attendance_early", "self_evaluation",
 )
@@ -37,8 +38,10 @@ class ReportError(Exception):
 def validate_report(report):
     if not isinstance(report, dict):
         raise ReportError("输入必须是 JSON 对象.")
+    for key, value in DEFAULTS.items():
+        report.setdefault(key, value)
     missing = [key for key in REQUIRED if key not in report]
-    unknown = sorted(set(report) - set(REQUIRED) - {"nth"})
+    unknown = sorted(set(report) - set(REQUIRED) - set(DEFAULTS) - {"nth"})
     if missing or unknown:
         problems = []
         if missing:
@@ -149,10 +152,10 @@ def check_environment():
     match = re.search(r"typst (\d+)\.(\d+)\.(\d+)", version)
     if not match or tuple(map(int, match.groups())) < (0, 13, 0):
         raise ReportError("需要 Typst 0.13 或更高版本, 当前为: " + version.strip())
-    installed = run_typst([executable, "fonts"]).splitlines()
+    installed = {line.strip() for line in run_typst([executable, "fonts"]).splitlines()}
     if not any(font in installed for font in FONTS):
         note = (
-            "未找到 " + " 或 ".join(FONTS) + " 字体, 已使用默认回退字体, 中文字形可能与预期不同."
+            "未找到 " + " 或 ".join(FONTS) + " 字体, 已使用 Typst 默认字体继续渲染, 中文字形可能与预期不同."
         )
         print("提示: " + note, file=sys.stderr)
     else:
@@ -165,7 +168,7 @@ def check_conflicts(output_dir, stem):
         return
     if not output_dir.is_dir():
         raise ReportError("输出路径不是目录: " + str(output_dir))
-    pattern = re.compile(re.escape(stem) + r"(?:\.typ|\.png|-第\d+页\.png)$")
+    pattern = re.compile(re.escape(stem) + r"(?:\.typ|\.png)$")
     conflicts = sorted(path.name for path in output_dir.iterdir() if pattern.fullmatch(path.name))
     if conflicts:
         raise ReportError("已有同名周报产物, 请选择其他目录或先处理原文件: " + ", ".join(conflicts))
@@ -208,29 +211,25 @@ def render_report(report, output_dir):
         work = Path(temporary)
         typ_path = work / (stem + ".typ")
         typ_path.write_text(source, encoding="utf-8")
+        image = work / "page.png"
         run_typst([
-            executable, "compile", str(typ_path), str(work / "page-{p}.png"),
+            executable, "compile", str(typ_path), str(image),
             "--format", "png", "--ppi", "300",
         ])
-        pages = sorted(work.glob("page-*.png"), key=lambda path: int(path.stem.split("-")[1]))
-        if not pages:
-            raise ReportError("Typst 未生成任何 PNG 图片.")
-        for page in pages:
-            with page.open("rb") as image:
-                header = image.read(24)
-            if len(header) != 24 or header[:8] != b"\x89PNG\r\n\x1a\n" or struct.unpack(
-                ">II", header[16:24]
-            ) != (2480, 3508):
-                raise ReportError("图片不是预期的 A4 300 DPI 尺寸: " + page.name)
-        files = [(typ_path, typ_path.name)] + [
-            (page, stem + (".png" if len(pages) == 1 else f"-第{index}页.png"))
-            for index, page in enumerate(pages, 1)
-        ]
+        if not image.is_file():
+            raise ReportError("Typst 未生成 PNG 图片.")
+        with image.open("rb") as file:
+            header = file.read(24)
+        if len(header) != 24 or header[:8] != b"\x89PNG\r\n\x1a\n":
+            raise ReportError("图片不是有效的 PNG: " + image.name)
+        width, height = struct.unpack(">II", header[16:24])
+        if width != 2480 or height < 1:
+            raise ReportError("图片不是预期的 A4 宽度 2480 像素: " + image.name)
+        files = [(typ_path, typ_path.name), (image, stem + ".png")]
         output_dir.mkdir(parents=True, exist_ok=True)
         check_conflicts(output_dir, stem)
         delivered = publish_files(files, output_dir)
     return {
-        "pages": len(pages),
         "files": [str(path) for path in delivered],
         "font_note": font_note,
     }

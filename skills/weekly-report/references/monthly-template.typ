@@ -5,8 +5,8 @@
   kind: "月报",
   year: 2026,
   month: 3,
-  name: "常瑞",
-  student_id: "25031212280",
+  name: "易靖远",
+  student_id: "26031210039G",
   start: "2026.3.1",
   end: "2026.3.31",
   contributions: (
@@ -25,14 +25,15 @@
 )
 // REPORT_DATA_END
 
-#set page(paper: "a4", margin: (top: 2.54cm, bottom: 2.54cm, left: 3.17cm, right: 3.17cm))
-#set text(font: ("Alimama FangYuanTi VF", "Alimama FangYuanTi"), size: 12pt, lang: "zh", region: "zh")
+#set page(paper: "a4", height: auto, margin: (x: 1.9cm, y: 2.54cm))
+#set text(font: "Alimama FangYuanTi", size: 12pt, lang: "zh", region: "zh")
 
 #let period = "本月"
 #let lines(items) = items.map(item => [#item]).join(linebreak())
-#let evaluations = ("非常满意", "满意", "不太满意").map(
-  option => if option == report.self_evaluation { "√ " + option } else { option },
-)
+#let evaluations = ("非常满意", "满意", "不太满意").map(option => {
+  let mark = if option == report.self_evaluation { sym.ballot.cross } else { sym.ballot }
+  [#mark #option]
+})
 #let head-cell(body) = table.cell(align: center + horizon, text(weight: "bold", body))
 #let cat-cell(body) = table.cell(align: center + horizon, body)
 #let body-cell(body) = table.cell(align: left + horizon, body)
@@ -42,7 +43,7 @@
 #v(8pt)
 
 #table(
-  columns: (17.6%, 39.7%, 42.7%),
+  columns: (auto, 1fr, auto),
   stroke: none,
   [姓名：#(report.name)],
   [学号：#(report.student_id)],
@@ -50,7 +51,7 @@
 )
 
 #table(
-  columns: (14.3%, 73%, 12.7%),
+  columns: (14.3%, 75.7%, 10%),
   stroke: 0.5pt,
   table.header(
     head-cell[类别],
@@ -79,7 +80,7 @@
   [],
   cat-cell[自我评价],
   body-cell[
-    #(period)进度或学习状态　#(evaluations.join("、"))
+    #(period)进度或学习状态　#(evaluations.join("　"))
   ],
   [],
 )
