@@ -44,10 +44,12 @@
 #v(8pt)
 
 #table(
-  columns: (auto, 1fr, auto),
+  columns: (auto, 1fr, auto, 1fr, auto),
   stroke: none,
   [姓名：#(report.name)],
+  [],
   [学号：#(report.student_id)],
+  [],
   [日期：#(report.start)-#(report.end)],
 )
 
