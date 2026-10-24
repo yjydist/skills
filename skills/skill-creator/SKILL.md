@@ -7,6 +7,42 @@ description: 在用户要求新建, 改进, 评审或校验 skill, 或询问 ski
 
 把会重复出现, 含非显然步骤或域知识, 且触发语境可辨识的请求做成 skill. 只依赖 Agent Skills 标准中定义的结构和字段, 让产出能迁移到不同客户端.
 
+## 前提条件
+
++ Node.js 20 或更高版本, 建议 22+. 先检查运行时是否存在: `command -v node`; 再比较版本: `node -e "process.exit(Number(process.versions.node.split('.')[0]) < 20 ? 1 : 0)"`. 两条命令任一非零按缺失处理: 前者说明命令不存在 (运行时未安装或不在 PATH 中, 此时后续 `node` 命令只会返回 127), 后者说明版本低于 20. 两条命令都不读取文件, 与当前工作目录无关. `node -v` 只用于展示当前版本, 不作为判定依据. Node 缺失或版本过低时, 修复命令由执行者按目标平台给出 (例如用 nvm 或系统包管理器安装 Node.js 20+); 不自动安装系统程序.
++ npm 包 `yaml`, `mdast-util-from-markdown` 和 `decode-named-character-reference`, 安装在 skill 目录的 `node_modules`. 依赖清单以 [dependency-list.mjs](scripts/dependency-list.mjs) 为准: `validate_skill.mjs`, `init_skill.mjs` 和 `check_dependencies.mjs` 都从该文件导入同一个数组, 三个脚本之间增删依赖只改这一处, 不各自维护副本; 同时同步本节的依赖条目与修复命令 (以及 `docs/skill-creator.md` 的依赖说明). 运行以下命令检查依赖可导入; 非零状态即缺失:
+
+  ```bash
+  cd <skill 目录> && node scripts/check_dependencies.mjs
+  ```
+
+  首选写法是 `cd <skill 目录> && node scripts/check_dependencies.mjs`. 脚本内部按自身位置向上解析依赖, 解析目标是 skill 目录的 `node_modules`, 与当前工作目录无关; 但命令中的脚本路径仍须按当前目录书写. 在 skill 目录运行 `node scripts/check_dependencies.mjs`, 在仓库根目录运行 `node skills/skill-creator/scripts/check_dependencies.mjs`, 其他目录使用绝对路径或可解析到该脚本的路径, 照抄上述相对路径会因找不到模块而失败. 通过时输出三个包的版本; 失败时按五段报告并保留原始错误.
++ npm, 随 Node.js 一起安装, 用于安装依赖. 检查: `npm -v`; 命令不存在或非零状态按缺失处理. npm 缺失时按修复 Node.js 安装处理, 由执行者按目标平台给出修复命令; 不单独安装系统程序. 该检查只查找 PATH 中的 npm, 与当前工作目录无关, 不读取项目文件.
++ 无其他外部程序与认证要求. 检查: `true`; 该命令不读取文件, 也不依赖 PATH 中的其他程序, 以状态 0 退出表示本项没有需要检测的外部程序或认证.
++ 本节中 Node.js, npm 与依赖可导入检查命令按 POSIX shell (sh/bash) 编写; Windows PowerShell 使用以下等价命令, 判定规则和退出状态相同: PowerShell 侧 `Get-Command` 失败时把 `$?` 置为 `False`, 不设置 `$LASTEXITCODE`; 判定依据是 `$?`, 不是进程退出码. `$LASTEXITCODE` 没有更新时会保留上一条本机命令的旧值, 因此不能作为判定依据; `node`/`npm` 这类本机命令的 `$?` 由其退出码派生, 判 `$?` 同样正确.
+
+  ```powershell
+  Get-Command node
+  node -e "process.exit(Number(process.versions.node.split('.')[0]) < 20 ? 1 : 0)"
+  Set-Location <skill 目录>
+  node scripts/check_dependencies.mjs
+  npm -v
+  node -e "process.exit(0)"
+  ```
+
+  其中 `Get-Command node` 对应 `command -v node`; `Set-Location <skill 目录>` 后运行 `node scripts/check_dependencies.mjs` 对应依赖可导入检查的 `cd <skill 目录> && node scripts/check_dependencies.mjs`, 两行分开执行, 不使用 Windows PowerShell 5.1 不支持的 `&&`; `npm -v` 对应 npm 条目的存在与可执行检查; 最后一条 `node -e "process.exit(0)"` 代替 "无其他外部程序与认证要求" 条目的 `true`.
++ 执行脚本或产出文件前逐项检查; 任一项不满足时停止, 不继续产出. 检查结果按五段报告: 缺少项, 检测结果, 要求, 修复命令, 影响. 修复命令按缺失项区分: 运行时或外部程序缺失时由执行者按目标平台给出, 第三方依赖缺失时使用本节给出的 npm install 命令.
++ 依赖缺失时的修复命令, 路径相对本 skill 目录:
+
+  ```bash
+  npm install --no-save --no-package-lock --prefix <skill 目录> yaml mdast-util-from-markdown decode-named-character-reference
+  ```
+
++ 报告后询问用户选择修复后继续, 授权降级或终止; 没有降级路径时只提供修复和终止. 用户未选择前不继续, 不默认降级.
++ 不自动安装系统程序; 用户授权后可执行修复命令. 依赖目录存在但包缺失时可直接安装; 安装失败按前提缺失处理并报告原始错误. 只写入 skill 目录内的依赖目录, 不修改其他路径.
++ 修复命令执行成功后重新执行本节的全部前提检查: 先重新检查 Node 可执行 (`command -v node`) 与版本比较, 再重新检查依赖目录, 然后重新检查依赖可导入, 最后重新检查 npm 可用与其他外部程序与认证; 全部通过后才继续产出. 仍失败时按安装失败处理, 保留原始错误并重新阻断, 等待用户选择.
++ 分发本 skill 或产出的 skill 时排除 `node_modules` 等依赖目录, 不要把依赖目录打进分发产物; 依赖由使用者在目标环境按本节检查并安装. 目标环境缺少依赖时按前述阻断流程处理, 不复制依赖目录代替安装.
+
 ## 适用与门槛
 
 + 满足以下条件才创建: 请求会重复出现; 含非显然的步骤, 判断或域知识; 用户请求的语境可以辨识, 并能与同级 skill 区分.
@@ -53,21 +89,22 @@ description: 在用户要求新建, 改进, 评审或校验 skill, 或询问 ski
 
 ## 脚手架与校验
 
-+ 创建目录时运行 [init_skill.py](scripts/init_skill.py). 名称会归一化; 目录已存在时脚本拒绝覆盖. 在 skill-creator 目录运行:
++ 创建目录时运行 [init_skill.mjs](scripts/init_skill.mjs). 名称会归一化; 目录已存在时脚本拒绝覆盖. 在 skill-creator 目录运行:
 
   ```bash
-  python3 scripts/init_skill.py <name> --path <parent> [--scripts] [--references] [--assets]
+  node scripts/init_skill.mjs <name> --path <parent> [--scripts] [--references] [--assets]
   ```
 
 + `--path` 指向新 skill 的父目录, 通常应显式传入. 省略时脚本使用当前目录: 在 skill-creator 目录里照抄命令会把新 skill 创建到 skill-creator 目录内, 形成嵌套的 skill-creator/<name>. 换个位置运行脚本时同理, 先确认当前目录就是期望的父目录.
-+ 按需要加 `--scripts`, `--references`, `--assets`. 骨架只有一条占位注释: `description` 留空, 正文也只有该注释. 填写 `description` 后仍需写正文, 否则校验会因正文为空而失败; 写完正文后应删除该占位注释, 保留注释不会单独导致校验失败, 但应当清理.
-+ 编写完成后运行 [validate_skill.py](scripts/validate_skill.py) `<skill-dir>`. 错误必须修复; 警告默认不阻断, 交付前逐条判断.
++ 按需要加 `--scripts`, `--references`, `--assets`. 骨架的 `description` 留空, 正文是带 TODO 和占位符的 `## 前提条件` 占位节. 填写 `description` 并通过机械校验还不算完成: 必须替换占位内容, 补上实际流程正文并删除两处 TODO, 占位符不能留在交付物中.
++ 新 skill 的 `SKILL.md` 必须包含 `## 前提条件`, 按 [运行前提](references/spec.md#运行前提) 列出所有执行路径需要的运行时, 最低版本, 第三方依赖, 外部程序和认证, 并给出可执行的检查命令. 脚手架已生成该节的占位内容, 填写后不得删除该节; 缺少该节时不交付.
++ 编写完成后运行校验 [validate_skill.mjs](scripts/validate_skill.mjs): 在 skill-creator 目录运行 `node scripts/validate_skill.mjs <skill-dir>`; 在仓库根目录运行 `node skills/skill-creator/scripts/validate_skill.mjs <skill-dir>`. 错误必须修复; 警告默认不阻断, 交付前逐条判断.
 + 需要把警告也作为失败时加 `--strict`.
-+ 环境缺少 Python 时, 手工创建目录和最小 frontmatter (见 [规范](references/spec.md) 中的最小示例), 再按 "验证" 小节的降级流程人工核对.
++ 环境缺少 Node.js 或依赖时, 按 "前提条件" 的阻断流程处理, 不运行脚本. 用户授权降级后, 手工创建目录和最小 frontmatter (见 [规范](references/spec.md) 中的最小示例), 再按 "验证" 小节第 1 条的人工核对步骤逐项核对.
 
 ## 验证
 
-+ 机械校验优先执行. 未运行校验脚本时, 在交付说明中标注脚手架和校验均为人工执行, 写明未运行的具体原因 (缺少 Python, 依赖缺失或权限限制), 并逐项列出实际核对项和结果. 核对范围与 [校验脚本覆盖的检查](references/spec.md#校验脚本覆盖的检查) 等价, 不能只写"已人工核对"而不列项; 该指针即检查项来源, 不另行复制判定细节.
++ 机械校验优先执行. 未运行校验脚本时, 在交付说明中标注脚手架和校验均为人工执行, 写明未运行的具体原因 (缺少 Node.js, 依赖缺失或权限限制), 并逐项列出实际核对项和结果. 核对范围与 [校验脚本覆盖的检查](references/spec.md#校验脚本覆盖的检查) 等价, 不能只写"已人工核对"而不列项; 该指针即检查项来源, 不另行复制判定细节.
 + 校验脚本通过后, 仍要按 [规范](references/spec.md#校验脚本覆盖的检查) 中标注"需要人工核对"的项目人工确认, 至少包括 CommonMark 自动链接, 片段锚点, 折叠引用与快捷引用, 纯文本参考互引; 脚本通过不等于这些项目已覆盖.
 + 准备触发语料: 正例覆盖不同措辞, 负例是近似但应交给其他 skill 或工具的请求, 以及只需模型常识或一次推理, 或属于一次性任务的请求. 太简单, 不需要 skill 的请求不作为正例, 可作为负例, 用来排除过宽描述.
 + 能启动独立会话时, 用全新上下文试跑, 并尽可能对照无 skill 或旧版本的结果. 不能时人工判断, 标注为未自动验证.
@@ -77,6 +114,7 @@ description: 在用户要求新建, 改进, 评审或校验 skill, 或询问 ski
 ## 改进现有 skill
 
 + 先读现有入口和引用, 保持 `name` 与目录不变.
++ 现有 skill 缺少 `## 前提条件` 时补上: 按 [运行前提](references/spec.md#运行前提) 列出所有执行路径需要的运行时, 最低版本, 依赖, 外部程序和认证, 不按当前请求裁剪.
 + 优先删除不改变行为的指令, 再从使用反馈中泛化修改, 不只针对单个示例.
 + 修改后用之前的同一组语料和任务重跑, 确认没有退化.
 + 用户要求改名时, 说明会改变触发标识, 需要同时调整目录名和 `name`.
@@ -85,6 +123,7 @@ description: 在用户要求新建, 改进, 评审或校验 skill, 或询问 ski
 
 + 列出创建或修改的文件.
 + 列出机械校验, 触发语料和试跑的结果, 区分已验证项和未验证项. 未运行校验脚本时, 写明原因并逐项列出已人工核对的检查项; 未试跑时同样说明原因和人工判断依据.
++ 说明前提检查结果. 用户授权降级时, 记录缺少项, 跳过的步骤, 未验证项和对产物的影响.
 + 所在仓库对 skill 目录有额外规范时按规范补充, 并在交付说明中列出. 未执行时说明原因.
 + 说明产出是否只依赖标准内容, 以及使用了哪些客户端特有机制和对应的替代做法.
 + 门槛不满足但用户明确坚持创建时, 记录该决定和已说明的代价.
