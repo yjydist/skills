@@ -7,6 +7,7 @@
 + 仓库用于维护 skill 指令, 参考文档, 模板及各个 skill 自带的脚本. 仓库级维护不设置 CI 或统一的运行环境, 通过阅读规范和审查改动完成检查.
 + 每个 skill 的运行依赖由使用者按对应使用文档准备. 修改该 skill 的脚本时, 按其需要进行验证并说明结果或未验证原因.
 + 进行 Git 提交时, 使用仓库内的 [convenient-commit](skills/convenient-commit/SKILL.md).
++ 新建 skill 时, 使用仓库内的 [skill-creator](skills/skill-creator/SKILL.md), 由它完成门槛判断, 脚手架生成与机械校验.
 
 ## 文档与格式
 
