@@ -1,6 +1,6 @@
 # 报告模板
 
-paper-third-pass 的完整模式按本模板结构输出报告. 选择性模式使用 [选择性报告模板](selective-report-format.md). 报告标题固定为 `# Deep Reading Report`. 头部字段之后是 20 个编号小节.
+paper-third-pass 的完整模式按本模板结构输出报告. 报告标题固定为 `# Deep Reading Report`. 头部字段之后是 20 个编号小节.
 
 报告正文使用简体中文, 论文原有术语保留英文原文. 关键判断尽可能给出论文内定位, 代码判断给出代码定位, 引用格式见第 20 节.
 
