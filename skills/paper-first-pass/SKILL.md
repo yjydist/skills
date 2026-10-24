@@ -7,6 +7,13 @@ description: 在用户提供论文 (PDF, arXiv 页面或全文) 并希望快速�
 
 对一篇学术论文执行第一遍 triage 阅读: 以较低成本快速建立论文全局认知 (研究什么, 为什么值得研究, 核心方法, 实验结果概况), 并判断是否值得进入第二遍精读. 本 skill 针对快速决策优化, 不产出普通论文摘要.
 
+## 前提条件
+
++ 运行时: 无. 检查: `true`; 以状态 0 退出表示本项没有需要检测的运行时.
++ 第三方依赖: 无. 检查: `true`; 以状态 0 退出表示本项没有需要安装或导入的包.
++ 外部程序与认证: 无. 检查: `true`; 以状态 0 退出表示本项没有需要检测的外部程序或认证. 读取 PDF 与获取链接内容的能力由执行工具提供, 不要求特定程序.
++ 检查命令按 POSIX shell (sh/bash) 编写. 以 `true` 作为检查命令的条目表示该项无要求, 在不支持 `true` 的 shell 中直接视为通过.
+
 ## 核心原则
 
 + 第一遍的价值在于 information gain per minute, 而不是 completeness. 目标不是全部看懂, 而是找出论文的 narrative: Problem -> Existing approaches -> Limitation / Gap -> Proposed idea -> Claimed contribution -> Evidence -> Conclusion.
