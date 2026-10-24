@@ -7,6 +7,16 @@ description: 在用户要求生成周报或月报, 或明确调用本 skill 时,
 
 使用 [周报模板](references/weekly-template.typ) 或 [月报模板](references/monthly-template.typ) 和 [渲染脚本](scripts/render.py) 生成周报或月报, 脚本按报告类型选择模板. 保留模板中的 A4 页面宽度, 字体, 字号, 页边距, 标题, 信息行和类别表格. 页面高度随内容自动增长, 一次渲染只输出一张图片.
 
+## 前提条件
+
++ 运行时: Python 3.9 或更高版本, 用于运行渲染脚本. 检查: `python3 -V`; 命令不存在或状态非零按缺失处理, 版本低于 3.9 也按缺失处理.
++ 第三方依赖: 无, 渲染脚本只使用 Python 标准库. 检查: `true`; 以状态 0 退出表示本项没有需要安装或导入的包.
++ 外部程序: Typst 0.13 或更高版本, 用于编译 Typst 源文件. 检查: `typst --version`; 命令不存在或状态非零按缺失处理, 版本低于 0.13 也按缺失处理. 脚本会再次实际检查 Typst 版本.
++ 认证: 无. 检查: `true`; 以状态 0 退出表示本项没有需要检测的认证.
++ 字体: 模板只使用 `Alimama FangYuanTi`. 检查: `typst fonts | grep -i Alimama`; 未匹配时说明字体缺失. 字体缺失不阻断渲染: 脚本回退到 Typst 默认字体继续渲染, 并通过结果中的 `font_note` 返回提示, 交付时告知用户中文字形可能与预期不同.
++ Python 或 Typst 检查不满足时停止, 不继续产出, 报告按五段给出: 缺少项, 检测结果, 要求, 修复命令, 影响. 字体缺失不属阻断项, 按上一条回退并提示.
++ 检查命令按 POSIX shell (sh/bash) 编写. 字体检查使用管道与 `grep`, 其他 shell 中改为直接运行 `typst fonts` 并查找 Alimama. 以 `true` 作为检查命令的条目表示该项无要求, 在不支持 `true` 的 shell 中直接视为通过.
+
 ## 工作流程
 
 ### 1. 收集内容
@@ -25,7 +35,7 @@ description: 在用户要求生成周报或月报, 或明确调用本 skill 时,
 
 ### 2. 运行渲染脚本
 
-需要 Python 3.9+ 和 Typst 0.13+. 模板只使用 `Alimama FangYuanTi` 字体; 该字体不存在时脚本回退到 Typst 默认字体, 不停止渲染, 并通过结果中的 `font_note` 返回提示. 脚本会实际检查 Typst 版本和字体列表.
+按 "前提条件" 节完成检查后再运行. 字体缺失时按该节说明回退, 不阻断渲染.
 
 输入 JSON 包含以下字段. `name` 和 `student_id` 可省略, 省略时分别使用 `易靖远` 和 `26031210039G`. `nth` 仅周报需要. `attendance_hours` 与 `attendance_early` 可写数字或非空字符串. 其余文本字段均为非空字符串, `contributions` 与 `research` 为非空字符串数组. 使用 JSON 序列化工具保存内容, 不手工拼接用户文本到 shell 命令或 Typst 标记中.
 
