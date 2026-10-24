@@ -7,6 +7,13 @@ description: 在用户已完成论文第一遍阅读并决定精读, 提供论�
 
 对一篇学术论文执行第二遍理解阅读: 目标不是更长更全的摘要, 而是建立方法的准确 mental model 和实验到 claim 的 evidence map. 核心是检查逻辑链 Problem -> Assumptions -> Method -> Mechanism -> Expected effect -> Experiment -> Observation -> Claim 是否闭合, 每个断点都要指出. 本 skill 是 paper-first-pass 的下游, 服务于已决定精读的场景.
 
+## 前提条件
+
++ 运行时: 无. 检查: `true`; 以状态 0 退出表示本项没有需要检测的运行时.
++ 第三方依赖: 无. 检查: `true`; 以状态 0 退出表示本项没有需要安装或导入的包.
++ 外部程序与认证: 无. 检查: `true`; 以状态 0 退出表示本项没有需要检测的外部程序或认证. 读取 PDF 与获取链接内容的能力由执行工具提供, 不要求特定程序.
++ 检查命令按 POSIX shell (sh/bash) 编写. 以 `true` 作为检查命令的条目表示该项无要求, 在不支持 `true` 的 shell 中直接视为通过.
+
 ## 核心原则
 
 + 第二遍的价值在于 mental model 和 evidence map 的准确性, 而不是篇幅. 报告不追求更长更全, 质量看逻辑链审计是否到位.
