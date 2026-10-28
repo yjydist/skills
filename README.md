@@ -14,7 +14,7 @@
 + to-github-issue: 将会话待办整理为无需认证的 issue 草稿, 创建时核对仓库与权限并集中确认, 支持父子 issue. [具体文档](docs/to-github-issue.md)
 + swiss-grid-design: 用瑞士国际主义的网格, 字体与留白创建, 调整或评审多媒介视觉方案, 明确默认参数和功能例外. [具体文档](docs/swiss-grid-design.md)
 + weekly-report: 按固定表格版式渲染周报或月报, 事实沿用用户提供的内容, 条目按事项式汇报口吻呈现, 输出 A4 宽度 300 DPI 的单张可变高度 PNG 与独立 Typst 源文件. [具体文档](docs/weekly-report.md)
-+ paper-first-pass: 对学术论文执行第一遍 triage 阅读, 输出论文快照报告与第二遍阅读建议. [具体文档](docs/paper-first-pass.md)
++ paper-first-pass: 面向没有领域基础的读者, 用场景和类比串讲论文的问题, 方法, 证据与边界, 给出后续阅读建议. [具体文档](docs/paper-first-pass.md)
 + paper-second-pass: 对学术论文执行第二遍理解阅读, 建立方法 mental model 与实验到 claim 的证据映射, 输出 16 节精读报告与第三遍阅读建议. [具体文档](docs/paper-second-pass.md)
 + paper-third-pass: 对学术论文执行第三遍深度阅读, 重建逻辑链并深入分析数学, 实验与代码, 支持完整 20 节报告或围绕指定问题的选择性报告. [具体文档](docs/paper-third-pass.md)
 + mentor-profile: 汇总导师对图形交付物的主观偏好 (实心填充图标, 配色最多 5 种, 板块颜色统一), 用于绘制或调整面向导师的图形. [具体文档](docs/mentor-profile.md)
